@@ -1,17 +1,18 @@
-# 队友协作指南
+# 协作指南
 
-仓库地址为 https://github.com/Hefeng13/tetris-rl。所有人都可以浏览和克隆公开仓库，并通过 Issue 或 Pull Request 参与讨论。获得协作权限的小组成员可以直接提交仓库分支。
+仓库地址：https://github.com/Hefeng13/tetris-rl
 
-## 第一次加入
+仓库公开，任何人都可以浏览、克隆，并通过 Issue 或 Pull Request 参与讨论。小组成员接受协作邀请后，可以直接向仓库推送分支。
 
-1. 在 GitHub 接受仓库协作邀请。
-2. 用 GitHub Desktop 登录自己的 GitHub 账号，选择 File → Clone repository，输入仓库地址。
-3. 打开克隆后的文件夹，按照 README 安装依赖。
-4. 运行测试，并加载现有模型看一段游戏结果。
+## 1. 首次配置
 
-也可以在终端克隆。
+**方式一：GitHub Desktop**
 
-下面的 CPU 复现命令对应 Python 3.13。GPU 环境的核心依赖和运行命令见 README 的“GPU 运行”。
+1. 在 GitHub 上接受仓库的协作邀请。
+2. 在 GitHub Desktop 中登录账号，选择 File → Clone repository，输入仓库地址。
+3. 打开克隆下来的文件夹，按下面方式二的第 3 步起安装依赖。
+
+**方式二：命令行**
 
 ```powershell
 git clone https://github.com/Hefeng13/tetris-rl.git
@@ -22,99 +23,121 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-主项目支持 Python 3.10 及以上版本。本次 CPU 结果使用 Python 3.13.9 和 requirements-lock.txt 中的依赖，GPU 核心依赖见 requirements-gpu.txt。GPU 环境运行方法见 README。
+测试全部通过，即表示环境配置完成。
 
-## 怎样讨论一个想法
+- 正式结果是在 Python 3.13.9 下、按 `requirements-lock.txt` 的依赖版本跑出来的。项目最低支持 Python 3.10。
+- GPU 环境见 README 的「GPU」一节。
+- 激活虚拟环境、运行各方法的方式见 README 的「启动」一节。
 
-在 Issues 点击 New issue，选择“实验与改进讨论”。说明想研究的问题、准备修改的内容和对照方法。每个问题对应一个 Issue，后续的成绩、图表和讨论可以继续写在该 Issue 中。
+## 2. 分支与提交流程
 
-例如可以建立一个题为“比较 gamma=0.95 与 0.99”的 Issue。写清楚其他配置沿用哪个版本、使用哪些种子，再运行对应的实验。
+`main` 只放已经验证过的共享版本。任何改动都先在自己的分支上做，再通过 Pull Request 合并。
 
-## 怎样一起修改代码
+分支命名：
 
-main 保存已核验的共享版本，个人修改使用独立分支，例如 feat/reward-demo、feat/features 或 docs/report。
+| 前缀 | 用途 | 示例 |
+|---|---|---|
+| `feat/` | 新实验或新功能 | `feat/gamma99`、`feat/cnn-features` |
+| `fix/` | 修复问题 | `fix/heuristic-height` |
+| `docs/` | 文档与报告 | `docs/midterm-report` |
 
-GitHub Desktop 的操作顺序如下。
-
-1. 点击 Fetch origin，获取队友的更新。
-2. 选择 main 并更新到最新版本。
-3. 点击 New branch，为当前改动创建分支。
-4. 修改代码或配置，运行相关测试和短实验。
-5. 在 Changes 写明修改内容，点击 Commit，再点击 Publish branch。
-6. 点击 Create Pull Request，填写改了什么、怎样验证和关联的 Issue。
-7. 请队友查看改动和结果，讨论后将改动合并到 main。
-
-对应的终端流程如下，分支名可以按自己的任务修改。
+**命令行流程**
 
 ```powershell
 git switch main
-git pull --ff-only
-git switch -c feat/reward-demo
+git pull --ff-only                  # 先同步最新的 main
+git switch -c feat/gamma99          # 新建分支
 
-# 完成修改和验证后执行
-git add .
-git commit -m "Compare a new reward setting"
-git push -u origin feat/reward-demo
+# 修改代码或配置，运行测试和冒烟实验后：
+git add <改动的文件>
+git commit -m "Compare gamma 0.95 vs 0.99"
+git push -u origin feat/gamma99
 ```
 
-随后在 GitHub 仓库的 Pull requests 页面创建合并请求。
+推送后，在 GitHub 的 Pull requests 页面创建 PR。
 
-## 怎样安排实验
+**GitHub Desktop 流程**：Fetch origin → 切到 `main` 并 Pull → New branch → 修改、测试 → Commit → Publish branch → Create Pull Request。
 
-- 配置文件放在 configs，复制一份并使用能说明实验内容的文件名。
-- 一个对照实验集中改变一个因素，记录训练预算、种子、放块上限和评价指标。
-- 每次运行使用新的输出目录，例如 runs/alice_gamma99_seed0。
-- 在 Issue 或 Pull Request 中记录所用配置、代码提交编号、运行命令和结果。
-- 训练和测试入口分别为 src/tetris_rl/train.py 与 src/tetris_rl/evaluate.py。
+**PR 内容**：写清楚改了什么、怎么验证的（测试结果、运行命令、关键数字），以及关联的 Issue。合并前至少找一位队友看过。
 
-四组方法分别位于 configs/dqn.yaml、configs/double_dqn.yaml、configs/dqn_shaped.yaml 和 configs/dqn_features13.yaml。每个文件记录该方法的算法、棋盘信息维度和奖励引导开关，训练和评估共用同一份代码。共用参数位于 configs/common.yaml，完整实验清单位于 configs/experiments.yaml。
+## 3. 用 Issue 讨论实验
 
-复制某个方法文件开始新实验时，将副本保存在 configs 目录，配置读取会使用同目录的 common.yaml。运行时指定 --config，例如 --config configs/dqn_features13.yaml，程序会自动选择对应的方法。
+新实验先开一个 Issue：New issue → 选择「实验与改进讨论」模板。一个问题对应一个 Issue，之后的结果、图表和讨论都接着写在这个 Issue 下面。
 
-建议先执行短训练验证流程。
+Issue 里要写清楚：
+
+- **研究问题**：例如「γ = 0.99 是否优于 0.95」
+- **改动**：改了哪个配置项，其余配置沿用哪个版本
+- **对照**：和哪个已有配置比较
+- **设置**：训练种子、训练步数、评估上限
+
+## 4. 实验规范
+
+**新增配置**：在 `configs/` 下复制一个方法文件，文件名要能看出实验内容（例如 `dqn_gamma99.yaml`），并修改 `id`。加载时会自动合并同目录下的 `common.yaml`。
 
 ```powershell
-.\.venv\Scripts\python.exe -m tetris_rl.train --steps 2000 --validation-episodes 3 --test-episodes 3 --evaluation-cap 200 --output runs/my_smoke
+python -m tetris_rl.train --config configs/dqn_gamma99.yaml --seed 0 --output runs/gamma99_seed0
 ```
 
-## 文件放在哪里
+**控制变量**：一次只改一个因素。训练步数、种子、评估上限和评价指标，应与对照配置保持一致。
 
-| 内容 | 位置 |
+**输出目录**：每次运行都写到新目录，例如 `runs/<名字>_<实验>_seed<N>`，不要覆盖已有结果。
+
+**先跑冒烟测试**：正式训练前，先确认流程能跑通。
+
+```powershell
+python -m tetris_rl.train --steps 2000 --validation-episodes 3 --test-episodes 3 `
+    --evaluation-cap 200 --output runs/my_smoke
+```
+
+**记录**：在 Issue 或 PR 里记下配置文件、代码提交号（`git rev-parse --short HEAD`）、运行命令和结果。
+
+## 5. 文件放在哪里
+
+| 内容 | 位置 | 能否修改 |
+|---|---|---|
+| 源代码 | `src/tetris_rl/` | 可以，经 PR 合并 |
+| 实验配置 | `configs/` | 可以新增；`common.yaml` 改动会影响所有方法，需在 Issue 里先讨论 |
+| 回归测试 | `tests/` | 可以，改代码时同步补测试 |
+| 正式实验记录 | `runs/formal_v1/` | **不要修改** |
+| 正式结果 | `results/final/` | **不要修改** |
+| 新实验结果 | `results/<实验名>/` | 新建 |
+| 报告 | `report/` | 可以 |
+
+`runs/` 默认不纳入版本管理。要分享新实验的结果，把汇总表和图放进 `results/<实验名>/`，再用 `-f` 强制加入：
+
+```powershell
+git add configs/dqn_gamma99.yaml
+git add -f results/gamma99/summary.csv results/gamma99/learning_curves.png
+```
+
+模型文件（`.pt`）和训练日志要不要上传，先在对应 Issue 里讨论好再决定。
+
+## 6. 复现正式结果
+
+加载已有模型做一次短评估：
+
+```powershell
+python -m tetris_rl.evaluate --policy dqn `
+    --checkpoint runs/formal_v1/dqn_features13_seed0_attempt1/best.pt `
+    --episodes 2 --piece-cap 500 --output results/my_model_check
+```
+
+重新汇总正式批次：
+
+```powershell
+python -m tetris_rl.plot --batch runs/formal_v1 --output results/my_formal_summary
+```
+
+- 正式批次里记录的是 Windows 路径。汇总和演示脚本会按克隆后的目录重新定位文件，在其他系统上也能直接运行。
+- 正式实验所用的源码版本，保存在 `runs/formal_v1/source_snapshot/`。
+
+## 7. 分工
+
+改同一个模块之前，先在 Issue 里说明自己负责的范围，避免冲突。可以按下面三块分工：
+
+| 方向 | 涉及文件 |
 |---|---|
-| 可继续修改的实现 | src/tetris_rl |
-| 实验设置 | configs |
-| 回归检查 | tests |
-| 正式批次的模型、原始记录和源码快照 | runs/formal_v1 |
-| 正式逐局成绩、汇总、图表和演示 | results/final |
-| 项目报告、核验记录和进度表 | report |
-
-正式批次 formal_v1 作为历史实验依据。新的实验使用新的目录。需要让队友复现时，可以将所需的配置、摘要和图表放进一个新的 results/<实验名> 目录，并在 Pull Request 中明确列出需要加入版本记录的文件。
-
-例如保存了自己整理的实验摘要后，可以明确加入这些产物。
-
-```powershell
-git add configs/my_experiment.yaml
-git add -f results/my_experiment/summary.csv results/my_experiment/learning_curve.png
-```
-
-模型和日志的记录方式可以在对应 Issue 中讨论，再决定共享哪些文件。
-
-## 正式结果的复现
-
-队友克隆后可以加载已有模型进行短评估。
-
-```powershell
-.\.venv\Scripts\python.exe -m tetris_rl.evaluate --policy dqn --checkpoint runs/formal_v1/dqn_features13_seed0_attempt1/best.pt --episodes 2 --piece-cap 500 --output results/my_model_check
-```
-
-重新汇总已经完成的正式批次。
-
-```powershell
-.\.venv\Scripts\python.exe -m tetris_rl.plot --batch runs/formal_v1 --output results/my_formal_summary
-```
-
-历史批次保存了 Windows 格式的路径，当前汇总和演示入口会根据克隆后的批次目录定位模型和记录。原始运行代码位于 runs/formal_v1/source_snapshot。新的训练通过当前源代码生成跨平台格式的源码摘要。
-
-## 怎么交流更清楚
-
-Issue 记录问题、想法和实验讨论，Pull Request 展示具体修改和验证结果。修改同一模块前，可以先在 Issue 写明负责范围。分工可以围绕游戏与特征、训练与奖励、结果分析与报告安排。
+| 环境与特征 | `env.py`、`features.py` |
+| 训练与奖励 | `train.py`、`agents/`、`configs/` |
+| 结果分析与报告 | `plot.py`、`scripts/`、`report/` |

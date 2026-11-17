@@ -67,6 +67,10 @@ git push -u origin feat/reward-demo
 - 在 Issue 或 Pull Request 中记录所用配置、代码提交编号、运行命令和结果。
 - 训练和测试入口分别为 src/tetris_rl/train.py 与 src/tetris_rl/evaluate.py。
 
+四组方法分别位于 configs/dqn.yaml、configs/double_dqn.yaml、configs/dqn_shaped.yaml 和 configs/dqn_features13.yaml。每个文件记录该方法的算法、棋盘信息维度和奖励引导开关，训练和评估共用同一份代码。共用参数位于 configs/common.yaml，完整实验清单位于 configs/experiments.yaml。
+
+复制某个方法文件开始新实验时，将副本保存在 configs 目录，配置读取会使用同目录的 common.yaml。运行时指定 --config，例如 --config configs/dqn_features13.yaml，程序会自动选择对应的方法。
+
 建议先执行短训练验证流程。
 
 ```powershell

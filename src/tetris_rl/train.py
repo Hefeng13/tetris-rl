@@ -134,7 +134,7 @@ def run_training(config, experiment_name, seed, output, steps=None,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path)
-    parser.add_argument("--experiment", default="dqn")
+    parser.add_argument("--experiment")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--steps", type=int)
     parser.add_argument("--validation-episodes", type=int)
@@ -143,8 +143,12 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--device", choices=["cpu", "cuda", "auto"])
     args = parser.parse_args()
-    output = args.output or ROOT / "runs" / f"{args.experiment}_seed{args.seed}_{datetime.now():%Y%m%d_%H%M%S}"
-    run_training(load_config(args.config), args.experiment, args.seed, output, args.steps,
+    config = load_config(args.config)
+    experiment = args.experiment
+    if experiment is None:
+        experiment = config["experiments"][0]["id"] if len(config["experiments"]) == 1 else "dqn"
+    output = args.output or ROOT / "runs" / f"{experiment}_seed{args.seed}_{datetime.now():%Y%m%d_%H%M%S}"
+    run_training(config, experiment, args.seed, output, args.steps,
                  args.validation_episodes, args.test_episodes, args.evaluation_cap, args.device)
 
 

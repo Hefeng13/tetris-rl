@@ -78,6 +78,9 @@ python -m venv .venv
 # 单个正式配置
 .\.venv\Scripts\python.exe -m tetris_rl.train --experiment dqn --seed 0 --output runs/dqn_new
 
+# 按独立配置选择实验，自动识别方法
+.\.venv\Scripts\python.exe -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/features13_new
+
 # 完整批次，4 个配置、每个 5 个训练种子，加 2 个基线
 .\.venv\Scripts\python.exe scripts/run_experiments.py --batch runs/formal_new --workers 4
 
@@ -90,10 +93,43 @@ python -m venv .venv
 
 重新执行已有批次时，运行器校验冻结配置、跳过成功任务，并将失败任务保留在独立的 attempt 目录。训练中断后从该次配置的初始状态重新运行。best.pt 与 last.pt 用于推理评估。
 
+## 四组实验分别在哪里
+
+四组方法各有独立配置，共用 src/tetris_rl/train.py 的训练流程和 src/tetris_rl/evaluate.py 的评估流程。
+
+| 配置文件 | 实验内容 | 主要设置 |
+|---|---|---|
+| configs/dqn.yaml | 基础 DQN | 3 维棋盘信息 |
+| configs/double_dqn.yaml | Double DQN | 改进未来收益估计，3 维棋盘信息 |
+| configs/dqn_shaped.yaml | 奖励塑形 DQN | 启用奖励引导，3 维棋盘信息 |
+| configs/dqn_features13.yaml | 13 维 DQN | 额外输入每一列的高度 |
+
+configs/common.yaml 保存四组共用的训练步数、学习率、随机种子、游戏规则和评估参数。四个方法文件分别保存算法、棋盘信息维度和奖励引导开关。奖励引导的权重位于 common.yaml 的 shaping 部分。
+
+configs/experiments.yaml 是完整实验清单，引用 common.yaml 和四个方法文件。单独训练时用 --config 指定方法文件，完整批量运行沿用 experiments.yaml。批量运行也可以指定单个方法文件，运行该方法的五个训练种子和两个基线。
+
+```powershell
+# 四个方法分别运行，输出保存到各自的新目录
+.\.venv\Scripts\python.exe -m tetris_rl.train --config configs/dqn.yaml --output runs/dqn_separate
+.\.venv\Scripts\python.exe -m tetris_rl.train --config configs/double_dqn.yaml --output runs/double_dqn_separate
+.\.venv\Scripts\python.exe -m tetris_rl.train --config configs/dqn_shaped.yaml --output runs/dqn_shaped_separate
+.\.venv\Scripts\python.exe -m tetris_rl.train --config configs/dqn_features13.yaml --output runs/dqn_features13_separate
+
+# 13 维方法的五个训练种子，加两个基线
+.\.venv\Scripts\python.exe scripts/run_experiments.py --config configs/dqn_features13.yaml --batch runs/features13_batch --workers 4
+```
+
+运行时会把合并后的完整配置保存进各自的输出目录，便于以后复现。正式历史批次的原始配置和源码快照保存在 runs/formal_v1。
+
 ## 目录
 
 ```text
-configs/experiments.yaml     冻结的正式实验参数
+configs/common.yaml          四组实验共用的参数
+configs/dqn.yaml             基础 DQN 设置
+configs/double_dqn.yaml      Double DQN 设置
+configs/dqn_shaped.yaml      奖励塑形 DQN 设置
+configs/dqn_features13.yaml  13 维 DQN 设置
+configs/experiments.yaml     完整实验清单
 configs/pilot*.yaml          预实验参数及诊断记录
 src/tetris_rl/env.py         候选落点和游戏引擎适配
 src/tetris_rl/features.py    3/13 维棋盘特征和 float32 缩放

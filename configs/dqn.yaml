@@ -1,0 +1,6 @@
+# 基础 DQN，使用 3 维棋盘信息。
+# 共用参数从同目录 common.yaml 读取。
+id: dqn
+algorithm: dqn
+board_feature_dim: 3
+shaping_enabled: false

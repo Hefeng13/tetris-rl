@@ -1,0 +1,6 @@
+# 13 维 DQN，额外使用每列高度。
+# 共用参数从同目录 common.yaml 读取。
+id: dqn_features13
+algorithm: dqn
+board_feature_dim: 13
+shaping_enabled: false

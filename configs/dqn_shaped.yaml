@@ -1,0 +1,6 @@
+# 奖励塑形 DQN，使用 3 维棋盘信息并启用额外奖励引导。
+# 共用参数从同目录 common.yaml 读取。
+id: dqn_shaped
+algorithm: dqn
+board_feature_dim: 3
+shaping_enabled: true

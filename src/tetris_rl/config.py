@@ -13,9 +13,30 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def load_config(path=None):
-    with Path(path or ROOT / "configs/experiments.yaml").open(encoding="utf-8") as handle:
+def _read_yaml(path):
+    with Path(path).open(encoding="utf-8") as handle:
         return yaml.safe_load(handle)
+
+
+def load_config(path=None):
+    """Expand shared settings and experiment files into a self-contained config.
+
+    A single method file uses the adjacent common.yaml. Saved run configs and
+    legacy full configs already contain their settings and load directly.
+    """
+    path = Path(path or ROOT / "configs/experiments.yaml")
+    config = _read_yaml(path)
+    if "id" in config:
+        return {**_read_yaml(path.parent / "common.yaml"), "experiments": [config]}
+    if "shared_config" in config:
+        shared = _read_yaml(path.parent / config.pop("shared_config"))
+        config = {**shared, **config}
+    if "experiment_files" in config:
+        config["experiments"] = [
+            _read_yaml(path.parent / filename)
+            for filename in config.pop("experiment_files")
+        ]
+    return config
 
 
 def experiment_config(config, name):

@@ -49,6 +49,67 @@
 
 这一步拿多少分是确定的，不需要网络去学；网络只负责判断"这个局面以后还能拿多少分"。
 
+## 6 种方法
+
+**两个基线**（不用训练，用来对比）：
+
+| 方法 | 怎么下 |
+|---|---|
+| 随机放置 | 在能放的位置里随便挑一个 |
+| 人工规则 | 给每个落点打分：−0.5×最高高度 −0.36×空洞数 −0.18×凹凸度 + 消行数²，选最高分。权重是人定的，不会学习 |
+
+**四个 DQN 方法**（都要训练）。它们共用同一套网络和训练流程，只差下面三个开关：
+
+| 方法 | 配置文件 | 算法 | 棋盘特征 | 奖励塑形 | 想验证什么 |
+|---|---|---|---|---|---|
+| 基础 DQN | `configs/dqn.yaml` | DQN | 3 个 | 关 | 基准 |
+| Double DQN | `configs/double_dqn.yaml` | Double DQN | 3 个 | 关 | 换个更准的算法有没有用 |
+| 奖励塑形 | `configs/dqn_shaped.yaml` | DQN | 3 个 | 开 | 额外给奖励引导有没有用 |
+| 13 维特征 | `configs/dqn_features13.yaml` | DQN | 13 个 | 关 | 给网络更多棋盘信息有没有用 |
+
+- **3 个特征**：最高高度、空洞数、凹凸度（相邻列高度差之和）。
+- **13 个特征**：在这 3 个基础上，再加上 10 列各自的高度。
+- **Double DQN**：普通 DQN 估计"以后能拿多少分"时容易估高。Double DQN 让两个网络分工：一个选动作，另一个打分，以减少高估。
+- **奖励塑形**：除了游戏本身的分数，空洞变多、堆得变高也会被扣一点分，好让程序学得快些。具体权重在 `configs/common.yaml` 的 `shaping` 部分。
+
+## 怎么切换方法
+
+**训练时换方法**：把 `--config` 换成对应的配置文件就行。
+
+```powershell
+python -m tetris_rl.train --config configs/dqn.yaml            --seed 0 --output runs/try_dqn
+python -m tetris_rl.train --config configs/double_dqn.yaml     --seed 0 --output runs/try_double
+python -m tetris_rl.train --config configs/dqn_shaped.yaml     --seed 0 --output runs/try_shaped
+python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/try_f13
+```
+
+也可以写成 `--experiment 方法名`，方法名有 `dqn`、`double_dqn`、`dqn_shaped`、`dqn_features13` 四种：
+
+```powershell
+python -m tetris_rl.train --experiment double_dqn --seed 0 --output runs/try_double
+```
+
+两个参数都不写，默认训练基础 DQN。`--seed` 换成 0–4，就是同一方法的另一次独立训练。
+
+**测试时换方法**：用 `--policy` 选 `random`、`heuristic` 或 `dqn`。选 `dqn` 时要用 `--checkpoint` 指定模型文件，程序会自动识别它是哪种方法、用几个特征。
+
+**批量跑时只跑一种方法**：给 `run_experiments.py` 加上 `--config`，会自动跑这个方法的 5 个种子，再加上两个基线。
+
+```powershell
+python scripts/run_experiments.py --config configs/dqn_features13.yaml --batch runs/f13_batch --workers 4
+```
+
+**想加一个新方法**：在 `configs/` 里复制一个配置文件（必须放在这个文件夹，它会自动读同目录的 `common.yaml`），改这几行，然后用 `--config` 指定它来训练。
+
+```yaml
+id: dqn_features13_double     # 新名字，不能和已有方法重名
+algorithm: double_dqn         # dqn 或 double_dqn
+board_feature_dim: 13         # 3 或 13
+shaping_enabled: false        # true 或 false
+```
+
+学习率、训练步数、种子这些所有方法共用的参数，都在 `configs/common.yaml` 里改。
+
 ## 安装（Windows，Python 3.13）
 
 ```powershell
@@ -66,7 +127,7 @@ python -m venv .venv
 # 1. 先跑个小训练，确认流程能走通
 python -m tetris_rl.train --steps 2000 --validation-episodes 3 --test-episodes 3 --evaluation-cap 200 --output runs/smoke_test
 
-# 2. 训练一个方法（换 configs 里的文件就是换方法）
+# 2. 训练一个方法（怎么换方法见上面"怎么切换方法"）
 python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/my_run
 
 # 3. 测试基线
@@ -137,7 +198,3 @@ python scripts/render_demo.py --batch runs/formal_v1 --output results/my_videos
 ## GPU
 
 支持 `--device cuda`，但网络很小，实测 **CPU 反而更快**（同样任务 CPU 2.2 秒、GPU 3.5 秒），所以正式实验都是 CPU 跑的。GPU 环境安装方法见 `requirements-gpu.txt`。
-
-## 一起改代码
-
-仓库是私有的，需要先接受协作邀请。流程是：新建分支 → 改代码和跑实验 → 提 Pull Request 让队友看 → 合并。实验想法和发现在 Issues 里讨论。详细步骤见 [CONTRIBUTING.md](CONTRIBUTING.md)。

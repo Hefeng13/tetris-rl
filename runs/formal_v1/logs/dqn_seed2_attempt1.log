@@ -1,0 +1,12 @@
+dqn seed=2 step=0/100000 validation_lines=2.90
+dqn seed=2 step=10000/100000 validation_lines=2.80
+dqn seed=2 step=20000/100000 validation_lines=9.75
+dqn seed=2 step=30000/100000 validation_lines=6.80
+dqn seed=2 step=40000/100000 validation_lines=7.20
+dqn seed=2 step=50000/100000 validation_lines=6.00
+dqn seed=2 step=60000/100000 validation_lines=8.75
+dqn seed=2 step=70000/100000 validation_lines=11.10
+dqn seed=2 step=80000/100000 validation_lines=8.45
+dqn seed=2 step=90000/100000 validation_lines=9.15
+dqn seed=2 step=100000/100000 validation_lines=9.90
+COMPLETE dqn_seed2_attempt1 test_lines=11.47

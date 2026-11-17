@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.pt binary
+*.png binary
+*.gif binary
+*.mp4 binary
+runs/formal_v1/** -text whitespace=cr-at-eol
+results/final/** -text whitespace=cr-at-eol

@@ -1,0 +1,12 @@
+dqn_features13 seed=0 step=0/100000 validation_lines=0.15
+dqn_features13 seed=0 step=10000/100000 validation_lines=12.55
+dqn_features13 seed=0 step=20000/100000 validation_lines=20.30
+dqn_features13 seed=0 step=30000/100000 validation_lines=37.45
+dqn_features13 seed=0 step=40000/100000 validation_lines=88.55
+dqn_features13 seed=0 step=50000/100000 validation_lines=189.85
+dqn_features13 seed=0 step=60000/100000 validation_lines=469.55
+dqn_features13 seed=0 step=70000/100000 validation_lines=1061.30
+dqn_features13 seed=0 step=80000/100000 validation_lines=1197.70
+dqn_features13 seed=0 step=90000/100000 validation_lines=1197.30
+dqn_features13 seed=0 step=100000/100000 validation_lines=1196.55
+COMPLETE dqn_features13_seed0_attempt1 test_lines=1186.14

@@ -1,0 +1,448 @@
+{
+  "status": "complete",
+  "total_jobs": 22,
+  "workers": 4,
+  "provenance": {
+    "python": "3.13.9",
+    "platform": "Windows-11-10.0.26100-SP0",
+    "packages": {
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "gymnasium": "1.4.0",
+      "tetris-gymnasium": "0.3.1",
+      "matplotlib": "3.11.2",
+      "PyYAML": "6.0.3"
+    },
+    "source_sha256": "8681580e0d1fe4d9177b54d12b55e5df1e33c2bc871f3015207a699494623cda",
+    "device": "cpu",
+    "torch_threads": 1
+  },
+  "jobs": [
+    {
+      "job": "random",
+      "status": "complete",
+      "output": "runs\\formal_v1\\random_attempt1",
+      "summary": {
+        "mean_lines": 0.01,
+        "episode_std_lines": 0.09999999999999999,
+        "mean_pieces": 18.43,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 2.2488315000082366,
+        "episodes": 100
+      }
+    },
+    {
+      "job": "heuristic",
+      "status": "complete",
+      "output": "runs\\formal_v1\\heuristic_attempt1",
+      "summary": {
+        "mean_lines": 50.51,
+        "episode_std_lines": 23.590143036549154,
+        "mean_pieces": 167.36,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 22.237733899994055,
+        "episodes": 100
+      }
+    },
+    {
+      "job": "dqn_seed0",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_seed0_attempt1",
+      "summary": {
+        "mean_lines": 11.58,
+        "episode_std_lines": 7.455158880895425,
+        "mean_pieces": 55.46,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 7.286448999977438,
+        "episodes": 100,
+        "experiment": "dqn",
+        "training_seed": 0,
+        "training_seconds": 227.63398109999252,
+        "steps": 100000,
+        "best_checkpoint_step": 70000,
+        "initial_validation_lines": 0.1,
+        "best_validation_lines": 11.0
+      }
+    },
+    {
+      "job": "dqn_seed1",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_seed1_attempt1",
+      "summary": {
+        "mean_lines": 13.25,
+        "episode_std_lines": 8.46666070150112,
+        "mean_pieces": 61.57,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 8.151558099983959,
+        "episodes": 100,
+        "experiment": "dqn",
+        "training_seed": 1,
+        "training_seconds": 229.27242060002754,
+        "steps": 100000,
+        "best_checkpoint_step": 90000,
+        "initial_validation_lines": 0.25,
+        "best_validation_lines": 13.45
+      }
+    },
+    {
+      "job": "dqn_seed2",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_seed2_attempt1",
+      "summary": {
+        "mean_lines": 11.47,
+        "episode_std_lines": 8.616937748505332,
+        "mean_pieces": 56.72,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 7.619284799991874,
+        "episodes": 100,
+        "experiment": "dqn",
+        "training_seed": 2,
+        "training_seconds": 227.32303020000109,
+        "steps": 100000,
+        "best_checkpoint_step": 70000,
+        "initial_validation_lines": 2.9,
+        "best_validation_lines": 11.1
+      }
+    },
+    {
+      "job": "dqn_seed3",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_seed3_attempt1",
+      "summary": {
+        "mean_lines": 12.92,
+        "episode_std_lines": 9.305890390478279,
+        "mean_pieces": 59.89,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 7.929316299996572,
+        "episodes": 100,
+        "experiment": "dqn",
+        "training_seed": 3,
+        "training_seconds": 225.6465664000134,
+        "steps": 100000,
+        "best_checkpoint_step": 70000,
+        "initial_validation_lines": 0.0,
+        "best_validation_lines": 14.35
+      }
+    },
+    {
+      "job": "dqn_seed4",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_seed4_attempt1",
+      "summary": {
+        "mean_lines": 10.24,
+        "episode_std_lines": 7.986250811250672,
+        "mean_pieces": 53.33,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 7.3692294000065885,
+        "episodes": 100,
+        "experiment": "dqn",
+        "training_seed": 4,
+        "training_seconds": 228.3029481000267,
+        "steps": 100000,
+        "best_checkpoint_step": 100000,
+        "initial_validation_lines": 1.0,
+        "best_validation_lines": 14.75
+      }
+    },
+    {
+      "job": "double_dqn_seed0",
+      "status": "complete",
+      "output": "runs\\formal_v1\\double_dqn_seed0_attempt1",
+      "summary": {
+        "mean_lines": 13.0,
+        "episode_std_lines": 7.983568984944875,
+        "mean_pieces": 60.6,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 8.036942299979273,
+        "episodes": 100,
+        "experiment": "double_dqn",
+        "training_seed": 0,
+        "training_seconds": 244.37968769998406,
+        "steps": 100000,
+        "best_checkpoint_step": 50000,
+        "initial_validation_lines": 0.1,
+        "best_validation_lines": 12.7
+      }
+    },
+    {
+      "job": "double_dqn_seed1",
+      "status": "complete",
+      "output": "runs\\formal_v1\\double_dqn_seed1_attempt1",
+      "summary": {
+        "mean_lines": 13.62,
+        "episode_std_lines": 10.174021184895729,
+        "mean_pieces": 64.31,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 8.522861600009492,
+        "episodes": 100,
+        "experiment": "double_dqn",
+        "training_seed": 1,
+        "training_seconds": 243.04238359999727,
+        "steps": 100000,
+        "best_checkpoint_step": 100000,
+        "initial_validation_lines": 0.25,
+        "best_validation_lines": 14.3
+      }
+    },
+    {
+      "job": "double_dqn_seed2",
+      "status": "complete",
+      "output": "runs\\formal_v1\\double_dqn_seed2_attempt1",
+      "summary": {
+        "mean_lines": 12.84,
+        "episode_std_lines": 10.165022221701081,
+        "mean_pieces": 60.02,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 8.241451100009726,
+        "episodes": 100,
+        "experiment": "double_dqn",
+        "training_seed": 2,
+        "training_seconds": 245.4011878000165,
+        "steps": 100000,
+        "best_checkpoint_step": 100000,
+        "initial_validation_lines": 2.9,
+        "best_validation_lines": 17.25
+      }
+    },
+    {
+      "job": "double_dqn_seed3",
+      "status": "complete",
+      "output": "runs\\formal_v1\\double_dqn_seed3_attempt1",
+      "summary": {
+        "mean_lines": 12.75,
+        "episode_std_lines": 8.78402475571938,
+        "mean_pieces": 62.69,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 13.838195499993162,
+        "episodes": 100,
+        "experiment": "double_dqn",
+        "training_seed": 3,
+        "training_seconds": 259.79625549999764,
+        "steps": 100000,
+        "best_checkpoint_step": 20000,
+        "initial_validation_lines": 0.0,
+        "best_validation_lines": 16.35
+      }
+    },
+    {
+      "job": "double_dqn_seed4",
+      "status": "complete",
+      "output": "runs\\formal_v1\\double_dqn_seed4_attempt1",
+      "summary": {
+        "mean_lines": 9.21,
+        "episode_std_lines": 7.811277783183786,
+        "mean_pieces": 48.26,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 8.303551099990727,
+        "episodes": 100,
+        "experiment": "double_dqn",
+        "training_seed": 4,
+        "training_seconds": 269.28863160000765,
+        "steps": 100000,
+        "best_checkpoint_step": 70000,
+        "initial_validation_lines": 1.0,
+        "best_validation_lines": 11.55
+      }
+    },
+    {
+      "job": "dqn_shaped_seed0",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_shaped_seed0_attempt1",
+      "summary": {
+        "mean_lines": 13.07,
+        "episode_std_lines": 8.893596606888611,
+        "mean_pieces": 64.84,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 13.96227610000642,
+        "episodes": 100,
+        "experiment": "dqn_shaped",
+        "training_seed": 0,
+        "training_seconds": 285.12192460001097,
+        "steps": 100000,
+        "best_checkpoint_step": 80000,
+        "initial_validation_lines": 3.5,
+        "best_validation_lines": 13.9
+      }
+    },
+    {
+      "job": "dqn_shaped_seed1",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_shaped_seed1_attempt1",
+      "summary": {
+        "mean_lines": 21.91,
+        "episode_std_lines": 21.0180754340043,
+        "mean_pieces": 79.16,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 15.136058200005209,
+        "episodes": 100,
+        "experiment": "dqn_shaped",
+        "training_seed": 1,
+        "training_seconds": 297.6693304000073,
+        "steps": 100000,
+        "best_checkpoint_step": 0,
+        "initial_validation_lines": 27.9,
+        "best_validation_lines": 27.9
+      }
+    },
+    {
+      "job": "dqn_shaped_seed3",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_shaped_seed3_attempt1",
+      "summary": {
+        "mean_lines": 18.4,
+        "episode_std_lines": 13.938537523098622,
+        "mean_pieces": 82.17,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 14.476903600007063,
+        "episodes": 100,
+        "experiment": "dqn_shaped",
+        "training_seed": 3,
+        "training_seconds": 305.7852679999778,
+        "steps": 100000,
+        "best_checkpoint_step": 60000,
+        "initial_validation_lines": 4.5,
+        "best_validation_lines": 18.75
+      }
+    },
+    {
+      "job": "dqn_shaped_seed2",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_shaped_seed2_attempt1",
+      "summary": {
+        "mean_lines": 49.62,
+        "episode_std_lines": 31.66069481169982,
+        "mean_pieces": 163.66,
+        "cap_hit_rate": 0.0,
+        "elapsed_seconds": 29.894801400019787,
+        "episodes": 100,
+        "experiment": "dqn_shaped",
+        "training_seed": 2,
+        "training_seconds": 324.14568399998825,
+        "steps": 100000,
+        "best_checkpoint_step": 90000,
+        "initial_validation_lines": 30.95,
+        "best_validation_lines": 55.9
+      }
+    },
+    {
+      "job": "dqn_shaped_seed4",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_shaped_seed4_attempt1",
+      "summary": {
+        "mean_lines": 287.25,
+        "episode_std_lines": 249.47838006771673,
+        "mean_pieces": 744.99,
+        "cap_hit_rate": 0.01,
+        "elapsed_seconds": 166.31061320001027,
+        "episodes": 100,
+        "experiment": "dqn_shaped",
+        "training_seed": 4,
+        "training_seconds": 330.60469429998193,
+        "steps": 100000,
+        "best_checkpoint_step": 0,
+        "initial_validation_lines": 264.15,
+        "best_validation_lines": 264.15
+      }
+    },
+    {
+      "job": "dqn_features13_seed0",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_features13_seed0_attempt1",
+      "summary": {
+        "mean_lines": 1186.14,
+        "episode_std_lines": 80.64462759289027,
+        "mean_pieces": 2972.01,
+        "cap_hit_rate": 0.98,
+        "elapsed_seconds": 523.2164084000106,
+        "episodes": 100,
+        "experiment": "dqn_features13",
+        "training_seed": 0,
+        "training_seconds": 725.1426550000033,
+        "steps": 100000,
+        "best_checkpoint_step": 80000,
+        "initial_validation_lines": 0.15,
+        "best_validation_lines": 1197.7
+      }
+    },
+    {
+      "job": "dqn_features13_seed1",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_features13_seed1_attempt1",
+      "summary": {
+        "mean_lines": 1197.59,
+        "episode_std_lines": 1.101835016706405,
+        "mean_pieces": 3000.0,
+        "cap_hit_rate": 1.0,
+        "elapsed_seconds": 595.4186120000086,
+        "episodes": 100,
+        "experiment": "dqn_features13",
+        "training_seed": 1,
+        "training_seconds": 823.9861105000018,
+        "steps": 100000,
+        "best_checkpoint_step": 80000,
+        "initial_validation_lines": 0.05,
+        "best_validation_lines": 1197.55
+      }
+    },
+    {
+      "job": "dqn_features13_seed2",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_features13_seed2_attempt1",
+      "summary": {
+        "mean_lines": 1194.7,
+        "episode_std_lines": 28.800077160390465,
+        "mean_pieces": 2993.05,
+        "cap_hit_rate": 0.99,
+        "elapsed_seconds": 592.8532383000129,
+        "episodes": 100,
+        "experiment": "dqn_features13",
+        "training_seed": 2,
+        "training_seconds": 834.2495695000107,
+        "steps": 100000,
+        "best_checkpoint_step": 70000,
+        "initial_validation_lines": 4.9,
+        "best_validation_lines": 1197.75
+      }
+    },
+    {
+      "job": "dqn_features13_seed3",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_features13_seed3_attempt1",
+      "summary": {
+        "mean_lines": 1197.62,
+        "episode_std_lines": 1.080403964854224,
+        "mean_pieces": 3000.0,
+        "cap_hit_rate": 1.0,
+        "elapsed_seconds": 554.6517825000046,
+        "episodes": 100,
+        "experiment": "dqn_features13",
+        "training_seed": 3,
+        "training_seconds": 780.964032000018,
+        "steps": 100000,
+        "best_checkpoint_step": 80000,
+        "initial_validation_lines": 0.05,
+        "best_validation_lines": 1197.7
+      }
+    },
+    {
+      "job": "dqn_features13_seed4",
+      "status": "complete",
+      "output": "runs\\formal_v1\\dqn_features13_seed4_attempt1",
+      "summary": {
+        "mean_lines": 1182.39,
+        "episode_std_lines": 99.62798428416208,
+        "mean_pieces": 2962.53,
+        "cap_hit_rate": 0.97,
+        "elapsed_seconds": 355.4237246999983,
+        "episodes": 100,
+        "experiment": "dqn_features13",
+        "training_seed": 4,
+        "training_seconds": 885.2729404999991,
+        "steps": 100000,
+        "best_checkpoint_step": 80000,
+        "initial_validation_lines": 0.0,
+        "best_validation_lines": 1197.55
+      }
+    }
+  ]
+}

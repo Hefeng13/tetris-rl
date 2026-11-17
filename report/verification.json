@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "completed_jobs": 22,
+  "trained_models": 20,
+  "formal_training_steps": 2000000,
+  "held_out_test_episodes": 2200,
+  "shared_test_seeds": [
+    40000,
+    40099
+  ],
+  "piece_cap": 3000,
+  "all_model_weights_finite": true,
+  "validation_checkpoint_selection_verified": true,
+  "frozen_source_sha256_verified": "8681580e0d1fe4d9177b54d12b55e5df1e33c2bc871f3015207a699494623cda",
+  "cpu_core_tests_passed": 13,
+  "gpu_environment_tests_passed": 14,
+  "cpu_device_extension_bitwise_compatibility": true
+}

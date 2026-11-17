@@ -1,0 +1,88 @@
+environment:
+  action_mode: grouped_placements
+  cap_handling: truncation
+  height: 20
+  package: tetris-gymnasium
+  package_version: 0.3.1
+  terminal_candidate_handling: explicit_terminal_flag
+  test_piece_cap: 3000
+  training_piece_cap: 500
+  validation_piece_cap: 3000
+  width: 10
+evaluation:
+  aggregation: episode_mean_per_model_then_mean_and_std_across_training_seeds
+  checkpoint_selection: best_validation_mean_lines
+  epsilon: 0.0
+  primary_metric: mean_lines
+  random_baseline_policy_seed: 42
+  secondary_metrics:
+  - mean_pieces
+  - cap_hit_rate
+  - elapsed_seconds
+  test_episodes: 100
+  test_seed_start: 40000
+  validation_episodes: 20
+  validation_seed_start: 10000
+experiments:
+- algorithm: dqn
+  board_feature_dim: 3
+  id: dqn
+  shaping_enabled: false
+- algorithm: double_dqn
+  board_feature_dim: 3
+  id: double_dqn
+  shaping_enabled: false
+- algorithm: dqn
+  board_feature_dim: 3
+  id: dqn_shaped
+  shaping_enabled: true
+- algorithm: dqn
+  board_feature_dim: 13
+  id: dqn_features13
+  shaping_enabled: false
+features:
+  board_feature_divisor: 10.0
+  metadata:
+  - known_scaled_learning_reward
+  - candidate_terminated
+heuristic:
+  bumpiness_weight: -0.18
+  clear_weight: 1.0
+  height_weight: -0.5
+  holes_weight: -0.36
+project:
+  configuration_status: frozen
+  name: tetris-rl
+reward:
+  alife: 1
+  clear_line: 1
+  game_over: -10
+shaping:
+  definition: gamma_phi_next_minus_phi_current_terminal_phi_zero
+  holes_weight: 0.5
+  maximum_weight: 0.05
+training:
+  algorithm: dqn
+  batch_size: 64
+  epsilon_final: 0.05
+  exploration_fraction: 0.6
+  gamma: 0.95
+  hyperparameters_status: frozen_after_smoke_and_pilot
+  learning_rate: 0.001
+  learning_starts: 512
+  pilot_steps: 20000
+  replay_capacity: 20000
+  reward_scale: 10.0
+  seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  smoke_steps: 2000
+  target_update_interval: 1000
+  total_steps_per_seed: 100000
+  train_frequency: 4
+  validation_interval_steps: 10000
+  value_definition: Q = known_scaled_reward + gamma * V_afterstate; terminal continuation
+    = 0

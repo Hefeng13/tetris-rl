@@ -1,0 +1,20 @@
+{
+  "torch": "2.14.0+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "repetitions": 500,
+  "measurements": [
+    {
+      "device": "cpu",
+      "decision_ms": 0.2174955999944359,
+      "update_ms": 2.9671308000106364,
+      "network_cost_ms_per_environment_step": 0.959278299997095
+    },
+    {
+      "device": "cuda",
+      "decision_ms": 0.9956030000466853,
+      "update_ms": 5.861938400019426,
+      "network_cost_ms_per_environment_step": 2.461087600051542
+    }
+  ]
+}

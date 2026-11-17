@@ -1,0 +1,17 @@
+.venv/
+.venv-gpu/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+/runs/*
+!/runs/formal_v1/
+/results/*
+!/results/final/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

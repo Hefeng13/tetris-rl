@@ -1,0 +1,15 @@
+{
+  "mean_lines": 11.58,
+  "episode_std_lines": 7.455158880895425,
+  "mean_pieces": 55.46,
+  "cap_hit_rate": 0.0,
+  "elapsed_seconds": 7.286448999977438,
+  "episodes": 100,
+  "experiment": "dqn",
+  "training_seed": 0,
+  "training_seconds": 227.63398109999252,
+  "steps": 100000,
+  "best_checkpoint_step": 70000,
+  "initial_validation_lines": 0.1,
+  "best_validation_lines": 11.0
+}

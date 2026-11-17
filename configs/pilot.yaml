@@ -1,0 +1,81 @@
+project:
+  name: tetris-rl
+  configuration_status: pilot
+environment:
+  package: tetris-gymnasium
+  package_version: 0.3.1
+  width: 10
+  height: 20
+  action_mode: grouped_placements
+  training_piece_cap: 500
+  validation_piece_cap: 3000
+  test_piece_cap: 3000
+  cap_handling: truncation
+  terminal_candidate_handling: explicit_terminal_flag
+reward:
+  alife: 1
+  clear_line: 1
+  game_over: -10
+training:
+  algorithm: dqn
+  gamma: 0.95
+  seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  smoke_steps: 2000
+  pilot_steps: 20000
+  total_steps_per_seed: 100000
+  validation_interval_steps: 10000
+  hyperparameters_status: to_select_in_pilot
+  learning_rate: 0.001
+  replay_capacity: 20000
+  batch_size: 64
+  learning_starts: 512
+  train_frequency: 4
+  target_update_interval: 1000
+  epsilon_final: 0.05
+  exploration_fraction: 0.6
+  reward_scale: 10.0
+evaluation:
+  validation_seed_start: 10000
+  validation_episodes: 20
+  test_seed_start: 30000
+  test_episodes: 100
+  random_baseline_policy_seed: 42
+  epsilon: 0.0
+  checkpoint_selection: best_validation_mean_lines
+  primary_metric: mean_lines
+  secondary_metrics:
+  - mean_pieces
+  - cap_hit_rate
+  - elapsed_seconds
+  aggregation: episode_mean_per_model_then_mean_and_std_across_training_seeds
+experiments:
+- id: dqn
+  algorithm: dqn
+  board_feature_dim: 3
+  shaping_enabled: false
+- id: double_dqn
+  algorithm: double_dqn
+  board_feature_dim: 3
+  shaping_enabled: false
+- id: dqn_shaped
+  algorithm: dqn
+  board_feature_dim: 3
+  shaping_enabled: true
+- id: dqn_features13
+  algorithm: dqn
+  board_feature_dim: 13
+  shaping_enabled: false
+heuristic:
+  height_weight: -0.5
+  holes_weight: -0.36
+  bumpiness_weight: -0.18
+  clear_weight: 1.0
+shaping:
+  definition: gamma_phi_next_minus_phi_current_terminal_phi_zero
+  maximum_weight: 0.05
+  holes_weight: 0.5

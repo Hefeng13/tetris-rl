@@ -1,0 +1,6 @@
+{
+  "seed": 13,
+  "steps": 2000,
+  "identical_last_model_weights": true,
+  "identical_test_episodes": true
+}

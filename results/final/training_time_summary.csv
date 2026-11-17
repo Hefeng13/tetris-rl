@@ -1,0 +1,5 @@
+﻿method,training_runs,mean_elapsed_minutes,mean_test_lines,training_steps_per_run
+dqn,5,3.7939298213335375,11.892,100000
+double_dqn,5,4.206360487333344,12.283999999999999,100000
+dqn_shaped,5,5.144423004333221,78.05,100000
+dqn_features13,5,13.498717691666776,1191.688,100000

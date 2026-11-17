@@ -57,6 +57,35 @@
 
 生成时将六种方法完整重放到正式评估的结束位置，逐一核对最终消行数、落子次数、奖励和结束方式，并核对共同存活阶段的方块序列。棋盘矩阵、颜色、模型来源与逐步消行数随图保存。[下载 PDF](figures/board_comparison.pdf) · [查看棋盘数据](board_comparison.json)
 
+### 每局成绩分布，平均值背后是什么
+
+![每局消行数分布](figures/episode_lines_distribution.png)
+
+淡点展示全部 2200 局测试记录，每种学习方法合并五份模型各 100 局的成绩，两种基线各为 100 局。盒子覆盖中间 50% 的成绩，盒内黑线为中位数，横线覆盖最低到最高成绩。横轴保留零分，0 到 1 区间采用线性刻度，1 以上采用对数刻度。
+
+奖励塑形组的平均成绩为 78.05 行，中位数为 23.5 行，高分局拉高了平均值。13 维组的中位数为 1198 行。各组的四分位数、极值与零分局数随图保存。[下载 PDF](figures/episode_lines_distribution.pdf) · [查看统计数据](episode_distribution_summary.csv) · [查看全部逐局记录](episodes.csv)
+
+### 每放下一块，还有多少局能继续
+
+![存活长度曲线](figures/survival_curves.png)
+
+横轴为已经进行的落子决策次数，纵轴为尚未自然结束的测试局比例。左侧放大前 300 次落子，右侧展示完整的 3000 次评估长度。曲线向下表示有游戏自然结束，达到上限的测试局在该处计为仍存活，随后由评估程序结束。上限处的比例与达到上限的局数相互核对。[下载 PDF](figures/survival_curves.pdf) · [查看曲线数据](survival_curve_data.csv)
+
+### 这次运行花了多久，取得什么成绩
+
+![训练耗时与测试成绩](figures/training_time_vs_score.png)
+
+每个点是五次运行的平均时间和五份选中模型的平均测试成绩。每次训练预算为 100000 次落子。时间取自本机 CPU、四任务并行时的实际记录，覆盖训练、定期验证与检查点保存。奖励塑形组包含两份选中的初始化模型，用时按完整训练流程统计。
+
+| 方法 | 单次平均运行时间 | 平均测试消行数 |
+|---|---:|---:|
+| 3 维 DQN | 3.79 分钟 | 11.89 |
+| Double DQN | 4.21 分钟 | 12.28 |
+| 奖励塑形 DQN | 5.14 分钟 | 78.05 |
+| 13 维 DQN | 13.50 分钟 | 1191.69 |
+
+这些时间描述本次运行条件下的实际开销。逐次用时、训练预算和选中模型的训练步数均随图保存。[下载 PDF](figures/training_time_vs_score.pdf) · [查看逐次记录](training_time_scores.csv) · [查看方法汇总](training_time_summary.csv)
+
 ## 游戏演示
 
 下面展示训练种子 0 的 13 维模型，使用固定测试种子 40000。演示上限为 500 次落子，正式成绩表使用每局 3000 次落子的评估上限。
@@ -76,6 +105,10 @@
 - [五次训练的模型成绩与选中步数](training_seed_scores.csv)
 - [达到评估上限的局数](cap_hit_rates.csv)
 - [棋盘对照的原始矩阵与重放核验](board_comparison.json)
+- [每局成绩分布的分位数与极值](episode_distribution_summary.csv)
+- [逐个自然结束时刻的存活局数](survival_curve_data.csv)
+- [20 次运行的耗时与模型成绩](training_time_scores.csv)
+- [四种学习方法的平均耗时与成绩](training_time_summary.csv)
 - [正式模型、训练日志和配置](../../runs/formal_v1)
 - [13 维模型种子 0 的参数文件](../../runs/formal_v1/dqn_features13_seed0_attempt1/best.pt)
 
@@ -83,8 +116,14 @@
 
 ## 重新生成补充图表
 
-在项目根目录运行以下命令，读取正式批次记录和模型，生成三张图的 PNG、PDF 和数据文件。
+在项目根目录运行以下命令，读取正式批次记录和模型，生成六张图的 PNG、PDF 和数据文件。
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/plot_additional_results.py --batch runs/formal_v1 --output results/final
+```
+
+也可以只生成本次新增的成绩分布、存活长度和耗时成绩三张图。
+
+```powershell
+.\.venv\Scripts\python.exe scripts/plot_additional_results.py --batch runs/formal_v1 --output results/final --figures distribution survival training_time
 ```

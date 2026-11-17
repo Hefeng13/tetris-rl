@@ -1,7 +1,8 @@
-"""Plot seed stability, evaluation-cap counts and matched board snapshots."""
+"""Plot formal model scores, game distributions, survival, runtime and boards."""
 
 import argparse
 import csv
+import inspect
 import json
 from pathlib import Path
 
@@ -137,6 +138,174 @@ def plot_cap_hits(runs, output):
     save_figure(fig, output / "figures", "cap_hit_rates")
 
 
+def plot_episode_distribution(runs, output):
+    methods, observations, summary_rows = [], [], []
+    for method in METHODS:
+        values = np.array([int(row["lines"]) for run in runs if run["method"] == method
+                           for row in run["rows"]])
+        if not len(values):
+            continue
+        q25, median, q75 = np.quantile(values, [0.25, 0.5, 0.75])
+        methods.append(method)
+        observations.append(values)
+        summary_rows.append({"method": method, "test_episodes": len(values),
+            "minimum_lines": int(values.min()), "q25_lines": float(q25), "median_lines": float(median),
+            "q75_lines": float(q75), "maximum_lines": int(values.max()), "mean_lines": float(values.mean()),
+            "zero_line_games": int((values == 0).sum())})
+    write_table(output / "episode_distribution_summary.csv", summary_rows)
+    fig, ax = plt.subplots(figsize=(12, 6.8))
+    fig.subplots_adjust(left=0.20, right=0.80, top=0.82, bottom=0.22)
+    orientation = {"vert": False}
+    if "orientation" in inspect.signature(ax.boxplot).parameters:
+        orientation = {"orientation": "horizontal"}
+    boxes = ax.boxplot(observations, positions=range(len(methods)), **orientation,
+                       widths=0.40, whis=(0, 100), showfliers=False, patch_artist=True,
+                       medianprops={"color": "#222222", "linewidth": 2, "zorder": 4},
+                       whiskerprops={"color": "#555555"}, capprops={"color": "#555555"})
+    rng = np.random.default_rng(42)
+    for position, (method, values, box, summary) in enumerate(zip(methods, observations, boxes["boxes"], summary_rows)):
+        box.set_facecolor(COLORS[method])
+        box.set_alpha(0.35)
+        ax.scatter(values, position + rng.uniform(-0.18, 0.18, len(values)),
+                   s=10, color=COLORS[method], alpha=0.18, edgecolors="none", zorder=1)
+        ax.text(1.03, position, f"中位数 {summary['median_lines']:g}",
+                transform=ax.get_yaxis_transform(), va="center", fontsize=12)
+    ax.set_xscale("symlog", linthresh=1, linscale=0.5)
+    ax.set_xlim(-0.08, max(float(values.max()) for values in observations) * 1.2 + 1)
+    ax.set_xticks([0, 1, 5, 10, 50, 100, 500, 1200])
+    ax.xaxis.set_major_formatter(ScalarFormatter())
+    ax.set_yticks(range(len(methods)), [f"{LABELS[method]}\n{len(values)} 局" for method, values in zip(methods, observations)], fontsize=11)
+    ax.invert_yaxis()
+    ax.set_xlabel("每局消行数", fontsize=12)
+    ax.grid(axis="x", alpha=0.20)
+    fig.suptitle("每局成绩分布，平均值背后是什么？", fontsize=21, y=0.97)
+    fig.text(0.5, 0.89, "每个淡点代表一局测试，学习方法合并五份模型的测试记录", ha="center", fontsize=12)
+    fig.text(0.20, 0.105, "盒子覆盖中间 50% 的成绩，盒内黑线为中位数，横线覆盖最低到最高成绩。", fontsize=11)
+    fig.text(0.20, 0.04, "横轴 0–1 区间为线性刻度，1 以上为对数刻度。每局上限 3000 次落子。", fontsize=11, color="#555555")
+    save_figure(fig, output / "figures", "episode_lines_distribution")
+
+
+def survival_points(episodes):
+    """Empirical natural survival with a common cap and endpoint censoring."""
+    caps = {int(row["piece_cap"]) for row in episodes}
+    if len(caps) != 1:
+        raise ValueError("A survival curve requires one common placement cap")
+    cap = caps.pop()
+    terminations, censored = [], 0
+    for row in episodes:
+        pieces = int(row["pieces"])
+        terminated = row["terminated"].lower() == "true"
+        truncated = row["truncated"].lower() == "true"
+        if terminated == truncated or not 0 < pieces <= cap:
+            raise ValueError("Each completed episode needs a valid ending")
+        if truncated:
+            if pieces != cap:
+                raise ValueError("This curve supports censoring at the common cap")
+            censored += 1
+        else:
+            terminations.append(pieces)
+    terminations = np.sort(terminations)
+    moves = np.unique(np.concatenate(([0, cap], terminations))).astype(int)
+    remaining = len(episodes) - np.searchsorted(terminations, moves, side="right")
+    return moves, remaining, cap, censored
+
+
+def plot_survival_curves(runs, output):
+    curves, rows = [], []
+    for method in METHODS:
+        episodes = [row for run in runs if run["method"] == method for row in run["rows"]]
+        if not episodes:
+            continue
+        moves, remaining, cap, censored = survival_points(episodes)
+        curves.append((method, moves, remaining / len(episodes) * 100, cap))
+        rows.extend({"method": method, "placements": int(move), "remaining_games": int(count),
+                     "test_episodes": len(episodes), "remaining_percent": float(count / len(episodes) * 100),
+                     "cap_censored_here": censored if move == cap else 0}
+                    for move, count in zip(moves, remaining))
+    caps = {curve[3] for curve in curves}
+    if len(caps) != 1:
+        raise ValueError("Methods have different placement caps")
+    cap = caps.pop()
+    write_table(output / "survival_curve_data.csv", rows)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6.8), sharey=True)
+    fig.subplots_adjust(left=0.07, right=0.98, top=0.73, bottom=0.22, wspace=0.10)
+    styles = (":", "--", "-", "-.", (0, (4, 1, 1, 1)), "-")
+    for method, moves, remaining_percent, _ in curves:
+        for ax in axes:
+            ax.step(moves, remaining_percent, where="post", label=LABELS[method],
+                    color=COLORS[method], linestyle=styles[METHODS.index(method)], linewidth=2)
+        axes[1].plot(cap, remaining_percent[-1], marker="|", color=COLORS[method], markersize=10)
+    axes[0].set_xlim(0, min(300, cap))
+    axes[1].set_xlim(0, cap * 1.01)
+    axes[0].set_title("开局阶段", fontsize=13)
+    axes[1].set_title("完整评估长度", fontsize=13)
+    for ax in axes:
+        ax.set_ylim(0, 105)
+        ax.set_yticks([0, 25, 50, 75, 100], ["0%", "25%", "50%", "75%", "100%"])
+        ax.set_xlabel("已经进行的落子决策次数", fontsize=12)
+        ax.grid(alpha=0.20)
+    axes[0].set_ylabel("尚未自然结束的测试局比例", fontsize=12)
+    feature_curve = next(curve for curve in curves if curve[0] == "dqn_features13")
+    axes[1].annotate(f"13 维 DQN\n上限处 {feature_curve[2][-1]:.1f}%", (cap, feature_curve[2][-1]),
+                     xytext=(-18, -28), textcoords="offset points", ha="right", va="top", fontsize=12)
+    fig.suptitle("每放下一块，还有多少局能继续？", fontsize=21, y=0.97)
+    fig.text(0.5, 0.89, "学习方法各汇总 500 局，两种基线各汇总 100 局，使用相同的测试方块序列", ha="center", fontsize=12)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.85), ncol=6, frameon=False, fontsize=10)
+    fig.text(0.07, 0.10, f"达到 {cap} 次落子的局在上限处计为仍存活，随后由评估程序结束。曲线展示到该上限。", fontsize=11)
+    fig.text(0.07, 0.04, "落子次数包含导致游戏结束的最后一次尝试。", fontsize=11, color="#555555")
+    save_figure(fig, output / "figures", "survival_curves")
+
+
+def plot_training_time(runs, output):
+    rows, summaries = [], []
+    for method in METHODS[2:]:
+        models = [run for run in runs if run["method"] == method]
+        if not models:
+            continue
+        for run in sorted(models, key=lambda run: run["summary"]["training_seed"]):
+            summary = run["summary"]
+            rows.append({"method": method, "training_seed": summary["training_seed"],
+                         "training_elapsed_seconds": summary["training_seconds"],
+                         "mean_test_lines": summary["mean_lines"], "training_steps": summary["steps"],
+                         "selected_checkpoint_step": summary["best_checkpoint_step"], "run_id": run["folder"].name})
+        summaries.append({"method": method, "training_runs": len(models),
+            "mean_elapsed_minutes": float(np.mean([run["summary"]["training_seconds"] for run in models]) / 60),
+            "mean_test_lines": float(np.mean([run["summary"]["mean_lines"] for run in models])),
+            "training_steps_per_run": models[0]["summary"]["steps"]})
+    write_table(output / "training_time_scores.csv", rows)
+    write_table(output / "training_time_summary.csv", summaries)
+    fig, ax = plt.subplots(figsize=(12, 6.8))
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.82, bottom=0.25)
+    offsets = {"dqn": (-160, 10), "double_dqn": (55, 8), "dqn_shaped": (20, 10), "dqn_features13": (-20, -45)}
+    for summary in summaries:
+        method = summary["method"]
+        minutes, score = summary["mean_elapsed_minutes"], summary["mean_test_lines"]
+        ax.scatter(minutes, score, s=150, color=COLORS[method], edgecolor="white", linewidth=1, zorder=3)
+        ax.annotate(f"{LABELS[method]}\n{minutes:.2f} 分钟 · {score:.2f} 行", (minutes, score),
+                    xytext=offsets[method], textcoords="offset points", fontsize=12,
+                    ha="right" if method == "dqn_features13" else "left",
+                    arrowprops={"arrowstyle": "-", "color": "#888888", "linewidth": 0.7})
+    heuristic = next(run for run in runs if run["method"] == "heuristic")
+    ax.axhline(heuristic["summary"]["mean_lines"], color=COLORS["heuristic"], linestyle="--", linewidth=1.5,
+               label="人工规则的平均成绩")
+    ax.set_xlim(0, max(row["mean_elapsed_minutes"] for row in summaries) * 1.18)
+    ax.set_yscale("log")
+    ax.set_ylim(min(row["mean_test_lines"] for row in summaries) / 2,
+                max(row["mean_test_lines"] for row in summaries) * 2)
+    ax.set_yticks([10, 20, 50, 100, 300, 1000, 2000])
+    ax.yaxis.set_major_formatter(ScalarFormatter())
+    ax.set_xlabel("单份模型的平均运行时间（分钟，覆盖训练和定期验证）", fontsize=12)
+    ax.set_ylabel("平均测试消行数（对数刻度）", fontsize=12)
+    ax.grid(alpha=0.20)
+    ax.legend(loc="upper left", frameon=False, fontsize=11)
+    fig.suptitle("这次运行花了多久，取得什么成绩？", fontsize=21, y=0.97)
+    fig.text(0.5, 0.89, "每个点汇总一种方法的五次运行，每次训练 100000 次落子", ha="center", fontsize=12)
+    fig.text(0.10, 0.12, "本机 CPU、四任务并行时的实际记录。时间覆盖训练、定期验证和检查点保存。", fontsize=11)
+    fig.text(0.10, 0.055, "奖励塑形组包含两份选中的初始化模型，用时按完整训练流程统计。", fontsize=11, color="#555555")
+    save_figure(fig, output / "figures", "training_time_vs_score")
+
+
 def replay_snapshots(run, config, test_seed, targets):
     method = run["method"]
     shaping = False
@@ -234,6 +403,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--test-seed", type=int, default=40000)
     parser.add_argument("--training-seed", type=int, default=0)
+    plotters = {"seed_scores": plot_seed_scores, "cap_hits": plot_cap_hits,
+                "distribution": plot_episode_distribution, "survival": plot_survival_curves,
+                "training_time": plot_training_time}
+    parser.add_argument("--figures", nargs="+", choices=[*plotters, "boards"],
+                        default=["seed_scores", "cap_hits", "boards", "distribution", "survival", "training_time"])
     args = parser.parse_args()
     torch.set_num_threads(1)
     args.output.mkdir(parents=True, exist_ok=True)
@@ -243,10 +417,12 @@ def main():
     with plt.rc_context({"font.family": "sans-serif", "font.sans-serif": ["Microsoft YaHei", "Noto Sans CJK SC", "SimHei", "DejaVu Sans"],
                          "axes.unicode_minus": False, "axes.spines.top": False, "axes.spines.right": False,
                          "pdf.fonttype": 42}):
-        plot_seed_scores(runs, args.output)
-        plot_cap_hits(runs, args.output)
-        plot_board_comparison(runs, config, args.output, args.test_seed, args.training_seed)
-    print(f"Saved three figures and their source data to {args.output}", flush=True)
+        for name in args.figures:
+            if name == "boards":
+                plot_board_comparison(runs, config, args.output, args.test_seed, args.training_seed)
+            else:
+                plotters[name](runs, args.output)
+    print(f"Saved {len(args.figures)} figures and their source data to {args.output}", flush=True)
 
 
 if __name__ == "__main__":

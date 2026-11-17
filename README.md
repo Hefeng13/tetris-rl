@@ -29,6 +29,9 @@
 - [5 次训练各自的成绩](results/final/figures/training_seed_scores.png)：看同一方法重复训练稳不稳
 - [放满 3000 块的比例](results/final/figures/cap_hit_rates.png)
 - [6 种方法的棋盘对比](results/final/figures/board_comparison.png)：同一串方块，各方法堆成什么样
+- [每局消行数分布](results/final/figures/episode_lines_distribution.png)
+- [存活长度曲线](results/final/figures/survival_curves.png)
+- [训练耗时与成绩](results/final/figures/training_time_vs_score.png)
 
 ![13 维 DQN 演示](results/final/videos/features13_seed0.gif)
 
@@ -143,7 +146,7 @@ python scripts/run_experiments.py --batch runs/my_batch --workers 4
 # 6. 把一批实验汇总成表格和图
 python -m tetris_rl.plot --batch runs/my_batch --output results/my_batch
 
-# 7. 生成补充图（训练稳定性、放满比例、棋盘对比）
+# 7. 生成全部六张补充图及随图数据
 python scripts/plot_additional_results.py --batch runs/formal_v1 --output results/my_figures
 
 # 8. 生成演示 GIF / MP4

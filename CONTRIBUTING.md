@@ -1,6 +1,6 @@
 # 队友协作指南
 
-仓库地址为 https://github.com/Hefeng13/tetris-rl。接受协作邀请后，可以克隆、提交分支并参与讨论。
+仓库地址为 https://github.com/Hefeng13/tetris-rl。所有人都可以浏览和克隆公开仓库，并通过 Issue 或 Pull Request 参与讨论。获得协作权限的小组成员可以直接提交仓库分支。
 
 ## 第一次加入
 

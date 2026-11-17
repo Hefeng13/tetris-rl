@@ -25,6 +25,12 @@
 
 ![五次独立训练的验证学习曲线](results/final/figures/learning_curves.png)
 
+补充图表展示了重复训练的波动、达到评估上限的比例和同一方块序列的棋盘变化，数据与 PDF 下载入口见[结果页面](results/final/README.md)。
+
+- [五次训练成绩散点图](results/final/figures/training_seed_scores.png)
+- [达到 3000 次落子上限的比例](results/final/figures/cap_hit_rates.png)
+- [六种方法的棋盘对照](results/final/figures/board_comparison.png)
+
 ### 13 维 DQN 演示
 
 演示固定使用一个测试种子，上限为 500 次落子。完整评估采用每局 3000 次落子的上限。
@@ -87,6 +93,9 @@ python -m venv .venv
 # 汇总已经完成的批次
 .\.venv\Scripts\python.exe -m tetris_rl.plot --batch runs/formal_v1 --output results/final
 
+# 生成训练稳定性、达到上限比例与棋盘对照图
+.\.venv\Scripts\python.exe scripts/plot_additional_results.py --batch runs/formal_v1 --output results/final
+
 # 生成同一固定种子的 GIF 和 MP4
 .\.venv\Scripts\python.exe scripts/render_demo.py --batch runs/formal_v1 --output results/final/videos
 ```
@@ -141,6 +150,7 @@ src/tetris_rl/evaluate.py    共用的独立评估入口
 src/tetris_rl/plot.py        逐局结果汇总和绘图
 scripts/run_experiments.py   有界并行批量运行
 scripts/render_demo.py       GIF 与 MP4 演示生成
+scripts/plot_additional_results.py  三张补充图与随图数据
 scripts/write_report.py     结果报告与进度表
 tests/                     环境与 TD 目标回归检查
 runs/                       配置快照、日志和模型

@@ -1,0 +1,7 @@
+﻿method,cap_hits,test_episodes,cap_hit_percent,piece_cap
+random,0,100,0.0,3000
+heuristic,0,100,0.0,3000
+dqn,0,500,0.0,3000
+double_dqn,0,500,0.0,3000
+dqn_shaped,1,500,0.2,3000
+dqn_features13,494,500,98.8,3000

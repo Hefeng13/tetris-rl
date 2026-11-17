@@ -35,6 +35,28 @@
 
 学习方法的误差线表示 5 个训练种子的标准差。基线的逐局波动见完整报告。
 
+### 重复训练五次，成绩是否稳定
+
+![五次训练成绩散点图](figures/training_seed_scores.png)
+
+每个点是一份选中模型在 100 局测试中的平均消行数，同组从左到右对应训练种子 0 到 4。纵轴采用对数刻度，黑色短线表示五份模型的平均成绩。空心点表示选中的初始化模型，对应奖励塑形组的种子 1 和 4。
+
+奖励塑形组的五次成绩从 13.07 到 287.25 行，13 维组从 1182.39 到 1197.62 行。完整数值和模型所处的训练步数见随图数据。[下载 PDF](figures/training_seed_scores.pdf) · [查看数据](training_seed_scores.csv)
+
+### 有多少局达到 3000 次落子上限
+
+![达到评估上限的比例](figures/cap_hit_rates.png)
+
+13 维 DQN 的 500 局测试中，494 局达到上限，占 98.8%。奖励塑形组为 1/500 局，占 0.2%。其余方法的测试局均在到达上限前结束。每根柱子旁同时标注实际局数和测试总局数，达到上限的游戏由评估程序结束。[下载 PDF](figures/cap_hit_rates.pdf) · [查看数据](cap_hit_rates.csv)
+
+### 同一个方块序列，棋盘怎样变化
+
+![相同方块序列的棋盘对照](figures/board_comparison.png)
+
+六种方法使用测试种子 40000，四种学习方法使用训练种子 0 的选中模型。三行分别对应第 10、20、50 次落子。提前结束的方法保留最终棋盘，并标明实际结束步数。这个固定序列用于观察落子行为，整体表现见全部测试序列的统计。
+
+生成时将六种方法完整重放到正式评估的结束位置，逐一核对最终消行数、落子次数、奖励和结束方式，并核对共同存活阶段的方块序列。棋盘矩阵、颜色、模型来源与逐步消行数随图保存。[下载 PDF](figures/board_comparison.pdf) · [查看棋盘数据](board_comparison.json)
+
 ## 游戏演示
 
 下面展示训练种子 0 的 13 维模型，使用固定测试种子 40000。演示上限为 500 次落子，正式成绩表使用每局 3000 次落子的评估上限。
@@ -51,7 +73,18 @@
 - [配置级汇总表](summary.csv)
 - [2200 局测试的逐局记录](episodes.csv)
 - [正式批次的来源记录](provenance.json)
+- [五次训练的模型成绩与选中步数](training_seed_scores.csv)
+- [达到评估上限的局数](cap_hit_rates.csv)
+- [棋盘对照的原始矩阵与重放核验](board_comparison.json)
 - [正式模型、训练日志和配置](../../runs/formal_v1)
 - [13 维模型种子 0 的参数文件](../../runs/formal_v1/dqn_features13_seed0_attempt1/best.pt)
 
 准备继续修改代码时，可以按[队友协作指南](../../CONTRIBUTING.md)安装环境、建立分支并记录新的实验。
+
+## 重新生成补充图表
+
+在项目根目录运行以下命令，读取正式批次记录和模型，生成三张图的 PNG、PDF 和数据文件。
+
+```powershell
+.\.venv\Scripts\python.exe scripts/plot_additional_results.py --batch runs/formal_v1 --output results/final
+```

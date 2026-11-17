@@ -78,30 +78,121 @@ TD 目标 = r + γ · max_{a'} Q_target(s', a')
 - **Double DQN**：由在线网络选择下一步动作，再由目标网络评估该动作，以降低 max 操作带来的高估偏差。
 - **奖励塑形**：基于势函数，附加奖励为 γΦ(s') − Φ(s)，其中 Φ = −(0.05·最高高度 + 0.5·空洞数)，终止状态 Φ = 0。权重见 `configs/common.yaml` 的 `shaping` 字段。
 
-## 切换方法
+## 安装（Windows，Python 3.13）
 
-**训练**：用 `--config` 指定配置文件，或用 `--experiment` 指定配置 ID（`dqn`、`double_dqn`、`dqn_shaped`、`dqn_features13`）。两者都省略时默认为 `dqn`。
+在项目根目录打开 PowerShell，执行一次即可：
 
 ```powershell
-python -m tetris_rl.train --config configs/dqn.yaml            --seed 0 --output runs/try_dqn
-python -m tetris_rl.train --config configs/double_dqn.yaml     --seed 0 --output runs/try_double
-python -m tetris_rl.train --config configs/dqn_shaped.yaml     --seed 0 --output runs/try_shaped
-python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/try_f13
-
-python -m tetris_rl.train --experiment double_dqn --seed 0 --output runs/try_double
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m pip install -e . --no-deps
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-`--seed` 指定训练种子，正式实验使用 0–4。
+测试全部通过即表示安装完成。
 
-**评估**：`--policy` 可选 `random`、`heuristic` 或 `dqn`。选 `dqn` 时需用 `--checkpoint` 指定模型，配置 ID 和特征维度会从模型文件的元数据中自动读取。
+## 启动
 
-**批量运行单一配置**：给 `run_experiments.py` 传入 `--config`，会运行该配置的 5 个训练种子和两个基线。
+### 第 0 步：激活虚拟环境
+
+每次新开终端都要先执行这一步。执行后提示符前面会出现 `(.venv)`，之后的 `python` 就指向项目环境。
+
+```powershell
+cd 你的路径\tetris-rl
+.\.venv\Scripts\Activate.ps1
+```
+
+- 如果提示"禁止运行脚本"，先执行 `Set-ExecutionPolicy -Scope Process Bypass`，再激活。
+- 如果用的是 cmd 而不是 PowerShell，激活命令改为 `.venv\Scripts\activate.bat`。
+- 不想激活也可以，把下文所有的 `python` 换成 `.\.venv\Scripts\python.exe` 即可。
+
+### 第 1 步：冒烟测试（可选）
+
+先用很少的步数跑一遍，确认训练、验证、测试整条流程都能走通：
+
+```powershell
+python -m tetris_rl.train --steps 2000 --validation-episodes 3 `
+    --test-episodes 3 --evaluation-cap 200 --output runs/smoke_test
+```
+
+### 第 2 步：运行各方法
+
+**基线**：不需要训练，直接评估，默认跑 100 个测试局。
+
+```powershell
+# 随机策略
+python -m tetris_rl.evaluate --policy random --output results/random_test
+
+# 人工启发式
+python -m tetris_rl.evaluate --policy heuristic --output results/heuristic_test
+```
+
+**DQN 系列**：用 `--config` 选配置文件，用 `--seed` 选训练种子。训练结束后程序会自动在测试集上评估 `best.pt`，结果写入 `--output` 目录下的 `summary.json`。
+
+```powershell
+# DQN（3 维特征）
+python -m tetris_rl.train --config configs/dqn.yaml --seed 0 --output runs/dqn_s0
+
+# Double DQN
+python -m tetris_rl.train --config configs/double_dqn.yaml --seed 0 --output runs/double_dqn_s0
+
+# DQN + 奖励塑形
+python -m tetris_rl.train --config configs/dqn_shaped.yaml --seed 0 --output runs/dqn_shaped_s0
+
+# DQN（13 维特征）
+python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/dqn_f13_s0
+```
+
+- 也可以用 `--experiment dqn` 代替 `--config configs/dqn.yaml`，其他配置同理。两者都不写时默认是 `dqn`。
+- 正式实验每个配置跑种子 0–4，各跑一次。
+- 每个配置跑 100,000 步，需要一段时间；训练过程会实时打印验证成绩。
+
+**单独评估已训练好的模型**：
+
+```powershell
+python -m tetris_rl.evaluate --policy dqn `
+    --checkpoint runs/formal_v1/dqn_features13_seed0_attempt1/best.pt --output results/f13_eval
+```
+
+配置 ID 和特征维度会从模型文件中自动读取，不需要另外指定。
+
+### 第 3 步：批量运行（可选）
+
+一条命令跑完全部实验（4 种配置 × 5 个种子 + 2 个基线），`--workers` 是并行进程数：
+
+```powershell
+python scripts/run_experiments.py --batch runs/my_batch --workers 4
+```
+
+只跑一种配置的 5 个种子和两个基线：
 
 ```powershell
 python scripts/run_experiments.py --config configs/dqn_features13.yaml --batch runs/f13_batch --workers 4
 ```
 
-**新增配置**：在 `configs/` 下新建 YAML 文件（加载时会自动合并同目录的 `common.yaml`），然后用 `--config` 指定。
+批量运行支持断点续跑：中断后重新执行同一命令，已完成的任务会自动跳过。
+
+### 第 4 步：汇总结果与作图
+
+```powershell
+# 结果表与学习曲线
+python -m tetris_rl.plot --batch runs/my_batch --output results/my_batch
+
+# 补充图及对应数据
+python scripts/plot_additional_results.py --batch runs/my_batch --output results/my_batch
+
+# 演示 GIF / MP4
+python scripts/render_demo.py --batch runs/my_batch --output results/my_batch/videos
+```
+
+### 注意
+
+- `--output` 每次请指向新目录。
+- `runs/formal_v1` 和 `results/final` 是正式结果，报告中的数据均来自这两处，请勿修改。
+
+### 新增配置
+
+在 `configs/` 下新建 YAML 文件（加载时会自动合并同目录的 `common.yaml`），然后用 `--config` 指定：
 
 ```yaml
 id: dqn_features13_double     # 配置 ID，需唯一
@@ -111,50 +202,6 @@ shaping_enabled: false        # true | false
 ```
 
 共享超参数（学习率、训练步数、种子等）统一在 `configs/common.yaml` 中修改。
-
-## 安装（Windows，Python 3.13）
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
-.\.venv\Scripts\python.exe -m pip install -e . --no-deps
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-以下命令均在项目根目录执行，`python` 指 `.\.venv\Scripts\python.exe`。
-
-## 常用命令
-
-```powershell
-# 冒烟测试：短时训练，检查流程能否跑通
-python -m tetris_rl.train --steps 2000 --validation-episodes 3 --test-episodes 3 --evaluation-cap 200 --output runs/smoke_test
-
-# 训练单个配置
-python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/my_run
-
-# 评估基线
-python -m tetris_rl.evaluate --policy random    --output results/random_test
-python -m tetris_rl.evaluate --policy heuristic --output results/heuristic_test
-
-# 评估已训练模型
-python -m tetris_rl.evaluate --policy dqn --checkpoint runs/formal_v1/dqn_features13_seed0_attempt1/best.pt --output results/my_eval
-
-# 完整实验：4 种配置 × 5 个种子 + 2 个基线
-python scripts/run_experiments.py --batch runs/my_batch --workers 4
-
-# 汇总结果表与学习曲线
-python -m tetris_rl.plot --batch runs/my_batch --output results/my_batch
-
-# 生成补充图及对应数据
-python scripts/plot_additional_results.py --batch runs/formal_v1 --output results/my_figures
-
-# 生成演示 GIF / MP4
-python scripts/render_demo.py --batch runs/formal_v1 --output results/my_videos
-```
-
-- `--output` 请指向新目录。
-- `runs/formal_v1` 和 `results/final` 是正式结果，报告中的数据均来自这两处，请勿修改。
-- 批量运行支持断点续跑：重复执行同一命令时，已完成的任务会自动跳过。
 
 ## 代码结构
 

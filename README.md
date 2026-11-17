@@ -2,9 +2,38 @@
 
 项目使用 Tetris Gymnasium 0.3.1 的游戏引擎，训练落点决策智能体，并比较随机策略、固定启发式、DQN、Double DQN、奖励塑形和棋盘特征数量。
 
-## 当前状态
+## 直接查看本次结果
 
-正式批次 22/22 项已完成，包括 20 次训练、200 万次训练交互和 2200 局独立测试。13 维 DQN 平均消行数为 1191.69±7.01，测试每局上限为 3000 次落子。完整报告见 report/results.md，逐局数据、汇总表、曲线和视频位于 results/final/。CPU 核心检查 13 项通过，GPU 环境 14 项检查通过。
+队友登录 GitHub 并接受仓库协作邀请后，可以使用浏览器查看成绩、图表和演示。
+
+[简明结果入口](results/final/README.md) · [完整实验报告](report/results.md) · [逐局测试数据](results/final/episodes.csv)
+
+正式批次 22/22 项已完成，包括 20 次训练、200 万次训练交互和 2200 局独立测试。每份学习模型使用相同的 100 个测试种子，每局上限为 3000 次落子决策。
+
+| 方法 | 平均消行数 |
+|---|---:|
+| 随机放置 | 0.01 |
+| 人工固定规则 | 50.51 |
+| 3 维 DQN | 11.89 |
+| Double DQN | 12.28 |
+| DQN＋奖励塑形 | 78.05 |
+| 13 维 DQN | **1191.69** |
+
+学习方法的成绩为 5 次独立训练各自测试成绩的平均值。13 维 DQN 的跨训练标准差为 7.01，98.8% 的测试局达到 3000 次落子上限。奖励塑形组波动较大，其中两份验证选择的检查点位于训练前，详细情况见报告。
+
+### 学习曲线
+
+![五次独立训练的验证学习曲线](results/final/figures/learning_curves.png)
+
+### 13 维 DQN 演示
+
+演示固定使用一个测试种子，上限为 500 次落子。完整评估采用每局 3000 次落子的上限。
+
+![13 维 DQN 游戏演示](results/final/videos/features13_seed0.gif)
+
+[观看或下载 MP4](results/final/videos/features13_seed0.mp4) · [查看全部图表和演示](results/final/README.md)
+
+CPU 核心检查 13 项通过，GPU 环境 14 项检查通过。正式逐局记录、模型、配置与源码快照已经随仓库共享。
 
 预实验记录保存在 runs/pilot_* 和 runs/smoke_*，正式统计使用 formal_v1 批次。
 
@@ -15,6 +44,15 @@
 第一次加入的安装步骤、分支操作和实验记录方式见 [队友协作指南](CONTRIBUTING.md)。正式实验依据保存在 runs/formal_v1 和 results/final，新的实验使用独立目录。
 
 ## 安装
+
+| 目的 | 使用的工具 |
+|---|---|
+| 浏览报告、成绩、图片和演示 | 浏览器与已获得仓库访问权限的 GitHub 账号 |
+| 在自己的电脑复现本次 CPU 实验 | Python 3.13 与下方命令安装的项目依赖 |
+| 同步代码、提交修改和参与评审 | GitHub Desktop 或 Git |
+| 使用 NVIDIA GPU 训练或推理 | README“GPU 运行”中的 CUDA 环境与依赖 |
+
+Python 官方下载见 [Python 3.13.9](https://www.python.org/downloads/release/python-3139/)，这是本次 CPU 实验使用的版本。GitHub Desktop 的下载和安装入口见 [官方网站](https://github.com/apps/desktop)。
 
 已验证的本机环境为 Windows、Python 3.13.9 和 CPU PyTorch。完整版本记录见 requirements-lock.txt。
 

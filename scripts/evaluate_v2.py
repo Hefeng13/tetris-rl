@@ -286,6 +286,7 @@ def main():
                     "expected_mean_lines": None,
                     "expected_mean_pieces": None,
                 })
+    use_cached_la0 = (count == settings["test_episodes"] and cap == config["environment"]["test_piece_cap"])
     if args.final_lookahead_dir:
         for seed_dir in sorted(args.final_lookahead_dir.glob("*_seed*_attempt*")):
             ep_csv = seed_dir / "episodes.csv"
@@ -293,7 +294,7 @@ def main():
             if not ckpt.exists():
                 continue
             _, meta = DQNAgent.load(ckpt, device="cpu")
-            if ep_csv.exists():
+            if use_cached_la0 and ep_csv.exists():
                 with ep_csv.open(encoding="utf-8", newline="") as handle:
                     la0_rows = list(csv.DictReader(handle))
                 for r in la0_rows:
@@ -304,6 +305,18 @@ def main():
                             "training_seed": meta["seed"]}
                 base_jobs.append(la0_spec)
                 base_results[la0_id] = {"job": la0_spec, "rows": la0_rows, "summary": summarize_episodes(la0_rows)}
+            else:
+                extra_jobs.append({
+                    "job_id": f"{meta['experiment']}_seed{meta['seed']}",
+                    "config_path": seed_dir / "config.yaml",
+                    "policy": "dqn",
+                    "checkpoint": ckpt,
+                    "run_id": seed_dir.name,
+                    "experiment": meta["experiment"],
+                    "board_dim": meta["board_feature_dim"],
+                    "training_seed": meta["seed"],
+                    "lookahead": 0,
+                })
             extra_jobs.append({
                 "job_id": f"{args.final_lookahead_label}_seed{meta['seed']}",
                 "config_path": seed_dir / "config.yaml",
@@ -319,7 +332,7 @@ def main():
     jobs_to_run.extend(extra_jobs)
     args.output.mkdir(parents=True, exist_ok=True)
     run_results = evaluate_jobs(jobs_to_run, config_path, cap, seeds, workers=args.workers) if jobs_to_run else {}
-    all_jobs = base_jobs + extra_jobs if args.reuse_base_episodes else jobs_to_run
+    all_jobs = base_jobs + extra_jobs
     results = {**base_results, **run_results}
     for job in all_jobs:
         exp_lines = job.get("expected_mean_lines")

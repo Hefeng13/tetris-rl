@@ -90,7 +90,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-*(若提示“禁止运行脚本”，先执行 `Set-ExecutionPolicy -Scope Process Bypass`。)*
+*(若提示“禁止运行脚本”，先执行 `Set-ExecutionPolicy -Scope Process Bypass`。另外 `requirements-lock.txt` 锁定了 Windows + Python 3.13.9 的依赖版本，下载约 260 MB 且默认从 PyTorch 官方源拉取；若使用 Python 3.10–3.12、Linux/macOS，或官方源下载较慢，可改用兼容安装：`.\.venv\Scripts\python.exe -m pip install -e ".[test]" -i https://pypi.tuna.tsinghua.edu.cn/simple`。)*
 
 ---
 
@@ -133,6 +133,7 @@ python -m tetris_rl.evaluate --policy potential --output results/my_potential
 
 ```powershell
 # 1. 多进程并行评估全部方法（输出汇总表 summary.csv 与逐局记录 episodes.csv）
+# 提示：全量 100 局（含 500 局 1 步前瞻）在 8 核 CPU 上约需 15–20 分钟；若只想快速验证可加 --episodes 3 --piece-cap 200
 python scripts/evaluate_v2.py --batch runs/formal_v1 --include-potential `
     --final-lookahead-dir runs/v2_final --output results/my_v2 --workers 8
 

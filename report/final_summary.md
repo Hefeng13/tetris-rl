@@ -29,13 +29,70 @@
 
 ---
 
-## 三、重点原理（怎么给老师和同学讲明白“1 步前瞻”）
+## 三、每个方法的公式与通俗拆解（与代码逐行对应）
 
-- **原本（0 步前瞻）**：手上有 `T` 块，只算“放完 `T` 块后的棋盘好不好”。因为不知道下一块是不是长条 `I`，AI 不敢留深槽，只好随手消 1 行拿保底分。
-- **1 步前瞻（`--lookahead 1`）**：环境其实已经知道预告的下一块（`queue[0]`）。决策时 AI 在脑子里多走一步：把 **当前块的每种放法 × 下一块的每种放法** 连起来打分：
-  $$\text{放法 } i \text{ 的总分} = r_1(i) + \gamma \cdot \max_{j}\big[r_2(i, j) + \gamma \cdot V(\text{连放两块后的棋盘})\big]$$
-  最后选总分最高的走法，**但只真正落下当前第 1 块**。
-- **实际价值**：**不用在训练时慢吞吞展开树**，只要训练出一个懂得蓄力价值的估值网络，测试时打开 1 步前瞻就能瞬间避开绝境并打出两步连招，直接把经典得分翻倍（`74,019 → 161,084`）！
+> **统一符号说明**（方便队员对照阅读）：
+> - $s$：当前棋盘状态；$a \in \{0,\dots,39\}$：候选落点（`4种旋转 × 10列`），合法动作集合记为 $\mathcal{A}_{\text{legal}}(s)$；
+> - $s'$：把当前方块按 $a$ 落下去并消行后的新棋盘（即 **afterstate / 落子后状态**）；
+> - $k \in \{0,1,2,3,4\}$：本次落子消掉的行数；$\text{done} \in \{0,1\}$：是否游戏结束（结束为 `1`，未结束为 `0`）；
+> - $H_{\max}$：棋盘最高列高度；$\text{Holes}$：被上方方块盖住的空洞总数；$\text{Bump}=\sum_{c=0}^{8}|h_{c+1}-h_c|$：相邻列高度差的绝对值之和。
+
+### 1. 随机策略（`Random`）
+- **公式**：
+  $$a \sim \text{Uniform}\big(\mathcal{A}_{\text{legal}}(s)\big)$$
+- **含义**：在所有不会撞出边框的合法落点里等概率瞎蒙，不看高度也不看消行，仅用作性能地板。
+
+### 2. 人工启发式（`Heuristic`）
+- **公式**：
+  $$\text{Score}(s, a) = -0.5\,H_{\max}(s') - 0.36\,\text{Holes}(s') - 0.18\,\text{Bump}(s') + 1.0\,k^2$$
+  （若落子直接结束则强制记为 $-10^6$；决策：$a^* = \arg\max_{a \in \mathcal{A}_{\text{legal}}(s)} \text{Score}(s, a)$）
+- **含义**：人手写的固定评价口诀——惩罚高、洞、凹凸不平，奖励一次多消行。**不学习、也不看未来方块**。
+
+### 3. 3 维基础 DQN（`dqn`）
+- **输入特征**（3 维，统一除以 10 缩放）：
+  $$x_3(s') = \left[\frac{H_{\max}(s')}{10},\; \frac{\text{Holes}(s')}{10},\; \frac{\text{Bump}(s')}{10}\right]$$
+- **训练奖励**（缩放 `reward_scale = 10`）：
+  $$r(s, a) = \begin{cases} -10/10 = -1.0, & \text{done}=1\text{（游戏结束）} \\ (1 + 10k^2)/10 = 0.1 + k^2, & \text{done}=0 \end{cases}$$
+- **Q 值分解与更新公式**（$\gamma = 0.95$）：
+  $$Q_\theta(s, a) = r(s, a) + \gamma (1 - \text{done}) \cdot V_\theta\big(x_3(s')\big)$$
+  $$y_{\text{DQN}} = r(s, a) + \gamma (1 - \text{done}) \cdot \max_{a' \in \mathcal{A}_{\text{legal}}(s')} Q_{\theta^-}(s', a')$$
+  $$\mathcal{L}(\theta) = \text{SmoothL1}\big(Q_\theta(s, a),\; y_{\text{DQN}}\big)$$
+- **含义**：即时奖励 $r$ 由引擎精确算出，MLP 神经网络 $V_\theta$ 只负责猜“落完后的棋盘以后还能拿多少折扣回报”。训练时不断让当前预测 $Q_\theta$ 逼近目标网络 $\theta^-$ 算出的目标值 $y_{\text{DQN}}$（Huber / SmoothL1 损失防梯度爆炸）。
+
+### 4. Double DQN（`double_dqn`）
+- **公式**（输入、奖励、$Q_\theta$ 分解与 3 维 DQN 完全相同，**只改目标值 $y$**）：
+  $$a^*_{\text{next}} = \arg\max_{a' \in \mathcal{A}_{\text{legal}}(s')} Q_{\theta}(s', a')$$
+  $$y_{\text{Double}} = r(s, a) + \gamma (1 - \text{done}) \cdot Q_{\theta^-}(s', a^*_{\text{next}})$$
+- **含义**：普通 DQN 的 $\max$ 既挑动作又打分，容易把随机误差估得偏高；Double DQN 拆成两步——**在线网络 $\theta$ 负责挑最看好的下一步动作 $a^*_{\text{next}}$，目标网络 $\theta^-$ 负责给它冷静复核打分**。
+
+### 5. 奖励塑形 DQN（`dqn_shaped`）与纯势函数基线（`Potential`）
+- **势函数与塑形奖励公式**（$\gamma = 0.95$）：
+  $$\Phi(b) = -\big(0.05\,H_{\max}(b) + 0.5\,\text{Holes}(b)\big), \quad \text{终止状态 }\Phi = 0$$
+  $$r_{\text{shaped}}(s, a) = r(s, a) + \gamma\Phi(s') - \Phi(s)$$
+- **含义**：在原奖励 $r$ 上附加了“落子前后棋盘好坏变化差值 $\gamma\Phi(s') - \Phi(s)$”，相当于每放一块若少洞/矮了就即时加分、多洞立刻扣分。
+- **纯势函数基线（$V \equiv 0$）**：令网络输出恒等于 0，仅按 $a^* = \arg\max_a r_{\text{shaped}}(s, a)$ 选落点。用它可以单独测出“人工势函数规则本身就值 `48.21` 行 / `2,925` 分”，解释为何塑形组第 0 步就能跑出高分。
+
+### 6. 13 维 DQN（`dqn_features13`）
+- **输入特征公式**（在 3 维前拼接 10 列各自高度 $h_0,\dots,h_9$）：
+  $$x_{13}(s') = \left[\frac{h_0}{10},\; \frac{h_1}{10},\; \dots,\; \frac{h_9}{10},\; \frac{H_{\max}}{10},\; \frac{\text{Holes}}{10},\; \frac{\text{Bump}}{10}\right]$$
+- **含义**：算法、奖励和 $\gamma=0.95$ **完全不变**，只把棋盘特征从 3 维扩到 13 维。网络终于能看出“哪一列高、哪一列留了凹槽、整体填了多少方块”，平均消行数直接从 11.89 飙到 1,191.69。
+
+### 7. 最终方法（`final_classic_double` + 1 步前瞻）
+- **① 经典连消训练奖励**（`reward_scale = 1000`）：
+  $$r_{\text{classic}}(s, a) = \begin{cases} -1000/1000 = -1.0, & \text{done}=1 \\ \big(5 + \text{Score}_{\text{NES}}(k)\big)/1000, & \text{done}=0 \end{cases}$$
+  其中一次消 `0/1/2/3/4` 行的基础分 $\text{Score}_{\text{NES}} = (0,\; 40,\; 100,\; 300,\; 1200)$，四连消是单消的 **30 倍**！
+- **② 长视野 Double DQN 训练**：使用 13 维特征 $x_{13}(s')$ + Double DQN 目标 $y_{\text{Double}}$ + **$\gamma = 0.99$**（$0.99^{15}\approx 0.86$，相比原来的 $0.95^{15}\approx 0.46$ 更愿意忍十几步叠层等长条）。
+- **③ 两种决策公式对比（消融 vs 最终）**：
+  - **不开前瞻（消融对照）**：只看当前第 1 块：
+    $$a^* = \arg\max_{a_1} \Big[ r_{\text{classic}}(s, a_1) + \gamma (1-\text{done}_1) V_\theta\big(x_{13}(s'_1)\big) \Big]$$
+  - **开启 1 步前瞻（最终方法）**：读取环境预告的下一块 `queue[0]`，在脑子里多推演 1 步（当前块放法 $a_1 \times$ 下一块放法 $a_2$）：
+    $$a^* = \arg\max_{a_1 \in \mathcal{A}_{\text{legal}}(s)} \left[ r_{\text{classic}}(s, a_1) + \gamma (1-\text{done}_1) \cdot \max_{a_2 \in \mathcal{A}_{\text{legal}}(s'_1)} Q_\theta(s'_1, a_2) \right]$$
+    其中 $Q_\theta(s'_1, a_2) = r_{\text{classic}}(s'_1, a_2) + \gamma (1-\text{done}_2) V_\theta\big(x_{13}(s'_2)\big)$，最后只落下第 1 步 $a^*$。
+- **含义**：`长视野 + 经典奖励` 教会网络怎么留槽打四连消，而 `1 步前瞻` 靠偷看下一块帮它避开绝境并精准完成两步连消（存活率从 `42.6% → 93.0%`，经典得分 `74,019 → 161,084`）。
+
+### 附：主评判指标“经典总分”计算公式
+$$\text{ClassicScore} = 40\,N_1 + 100\,N_2 + 300\,N_3 + 1200\,N_4$$
+（$N_1, N_2, N_3, N_4$ 分别为整局中单消、双消、三消、四连消的次数；同样 3000 块消 1200 行，全单消只有 4.8 万分，全四连消可达 36 万分。）
 
 ---
 

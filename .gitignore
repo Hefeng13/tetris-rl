@@ -8,8 +8,10 @@ build/
 dist/
 /runs/*
 !/runs/formal_v1/
+!/runs/v2_final/
 /results/*
 !/results/final/
+!/results/v2/
 .env
 .env.*
 !.env.example

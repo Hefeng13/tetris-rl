@@ -1,0 +1,17 @@
+# 最终方法：13 维棋盘特征 + Double DQN + 长视野(gamma=0.99) + 经典连消得分奖励
+# 共用参数从同目录 common.yaml 读取。
+id: final_classic_double
+algorithm: double_dqn
+board_feature_dim: 13
+shaping_enabled: false
+gamma: 0.99
+reward_scale: 1000.0
+learning_alife: 5.0
+learning_game_over: -1000.0
+learning_line_scores:
+- 0
+- 40
+- 100
+- 300
+- 1200
+checkpoint_selection: best_validation_classic_score

@@ -46,17 +46,23 @@ def experiment_config(config, name):
     raise ValueError(f"Unknown experiment {name}")
 
 
-def make_env(config, board_dim=3, piece_cap=None, shaping_enabled=False):
+def make_env(config, board_dim=3, piece_cap=None, shaping_enabled=False, experiment=None):
     from .env import PlacementEnv
     settings = config["environment"]
     reward = config["reward"]
+    training = config["training"]
+    exp = experiment or {}
     return PlacementEnv(board_dim=board_dim,
                         piece_cap=piece_cap or settings["training_piece_cap"],
                         width=settings["width"], height=settings["height"],
                         alife=reward["alife"], clear_line=reward["clear_line"],
-                        game_over=reward["game_over"], reward_scale=config["training"]["reward_scale"],
-                        gamma=config["training"]["gamma"],
-                        shaping=config["shaping"] if shaping_enabled else None)
+                        game_over=reward["game_over"],
+                        reward_scale=exp.get("reward_scale", training["reward_scale"]),
+                        gamma=exp.get("gamma", training["gamma"]),
+                        shaping=config["shaping"] if shaping_enabled else None,
+                        learning_line_scores=exp.get("learning_line_scores"),
+                        learning_alife=exp.get("learning_alife"),
+                        learning_game_over=exp.get("learning_game_over"))
 
 
 def write_json(path, value):

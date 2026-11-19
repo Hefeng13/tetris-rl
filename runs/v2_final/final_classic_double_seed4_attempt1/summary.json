@@ -1,0 +1,23 @@
+{
+  "mean_lines": 887.02,
+  "episode_std_lines": 352.39214210617956,
+  "mean_pieces": 2245.89,
+  "mean_return": 15483.62,
+  "mean_classic_score": 44360.6,
+  "episode_std_classic_score": 18306.1213927048,
+  "mean_clears_1": 520.44,
+  "mean_clears_2": 153.47,
+  "mean_clears_3": 16.16,
+  "mean_clears_4": 2.79,
+  "cap_hit_rate": 0.43,
+  "elapsed_seconds": 389.46514320001006,
+  "episodes": 100,
+  "experiment": "final_classic_double",
+  "training_seed": 4,
+  "training_seconds": 467.0774313000147,
+  "steps": 100000,
+  "best_checkpoint_step": 70000,
+  "initial_validation_lines": 0.0,
+  "best_validation_lines": 944.45,
+  "best_validation_score": 47123.0
+}

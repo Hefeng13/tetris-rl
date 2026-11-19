@@ -36,12 +36,15 @@ class DQNAgent:
         self.double = double
         self.input_dim = input_dim
 
+    def score_candidates(self, candidates):
+        with torch.no_grad():
+            features = torch.from_numpy(candidates.features).to(self.device)
+            return self.network(features).cpu().numpy()
+
     def act(self, candidates, epsilon=0.0):
         if epsilon > 0 and self.rng.random() < epsilon:
             return int(self.rng.choice(np.flatnonzero(candidates.legal)))
-        with torch.no_grad():
-            features = torch.from_numpy(candidates.features).to(self.device)
-            values = self.network(features).cpu().numpy()
+        values = self.score_candidates(candidates)
         return int(np.argmax(np.where(candidates.legal, values, -np.inf)))
 
     def update(self, replay, batch_size):

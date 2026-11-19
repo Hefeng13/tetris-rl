@@ -1,252 +1,170 @@
-# Tetris 强化学习：基于 Afterstate 的 DQN
+# Tetris 强化学习：基于 Afterstate 与 1 步前瞻的落点策略
 
-本项目将俄罗斯方块建模为 MDP，采用基于 afterstate 价值的 DQN 学习落点策略，并与随机策略、人工启发式进行对比。环境为 [Tetris Gymnasium](https://github.com/Max-We/Tetris-Gymnasium) 0.3.1，棋盘 20×10。动作空间是对当前方块"旋转 × 列位置"的离散化，共 40 个动作。
+本项目基于 [Tetris Gymnasium](https://github.com/Max-We/Tetris-Gymnasium) 0.3.1（`20×10` 棋盘），将俄罗斯方块建模为落点决策 MDP（每步从旋转 × 列位置共 40 个候选中选择落点），系统对比了基线策略、状态表示、算法改进、奖励设计与 **1 步前瞻搜索** 的效果。
 
-## 结果
+除了平均消行数，评估统一采用 **经典俄罗斯方块得分**（一次消 `1/2/3/4` 行分别计 `40/100/300/1200` 分），用来区分“同样能活满 3000 步，谁能主动攒多连消拿高分”。
 
-每种 DQN 配置使用 5 个训练种子（0–4）。每个模型在同一组 100 个测试种子上评估，单局上限 3000 块。下表为 5 个模型测试均值的平均。
+---
 
-| 方法 | 平均消行数 | 备注 |
-|---|---:|---|
-| 随机策略 | 0.01 | |
-| 人工启发式 | 50.51 | |
-| DQN（3 维特征） | 11.89 | |
-| Double DQN（3 维特征） | 12.28 | 与 DQN 无显著差异 |
-| DQN + 奖励塑形 | 78.05 | 跨种子方差大，见报告 |
-| DQN（13 维特征） | **1191.69** | 98.8% 的测试局达到上限 |
+## 核心结果（3000 块上限 · 100 局独立测试）
 
-主要结论：**状态表示比算法改进影响更大**。特征从 3 维扩展到 13 维，平均消行数从约 12 提升到约 1192；从 DQN 换成 Double DQN 则无明显收益。
+每种学习方法均在训练种子 `0–4` 上各训练 `100,000` 步，并在相同的 100 个测试序列（种子 `40000–40099`）上评估；下表为 5 个训练种子的均值汇总（详细逐局数据见 [results/v2/summary.csv](results/v2/summary.csv)）。
 
-- 结果页（图表、演示）：[results/final](results/final/README.md)
-- 实验报告：[report/results.md](report/results.md)
-- 逐局测试数据（2200 局）：[results/final/episodes.csv](results/final/episodes.csv)
+| 方法 | 平均经典得分 | 平均消行数 | 3000 块存活率 | 每局 1 / 2 / 3 / 4 连消次数 | 作用说明 |
+|---|---:|---:|---:|---:|---|
+| 随机策略 | 0.4 | 0.01 | 0.0% | 0.0 / 0.0 / 0.0 / 0.0 | 性能下限 |
+| 人工启发式 | 2,081.4 | 50.51 | 0.0% | 46.8 / 1.7 / 0.1 / 0.0 | 固定规则基线 |
+| 3 维 DQN | 486.4 | 11.89 | 0.0% | 11.1 / 0.4 / 0.0 / 0.0 | 基准配置 |
+| Double DQN（3 维） | 504.0 | 12.28 | 0.0% | 11.4 / 0.4 / 0.0 / 0.0 | 仅改算法：底座太弱时无改善 |
+| 奖励塑形 DQN（3 维） | 4,111.2 | 78.05 | 0.2% | 58.1 / 6.8 / 1.3 / 0.6 | 方差极大（纯势函数基线为 `2,925.4` 分） |
+| 13 维 DQN | 60,420.1 | **1,191.69** | **98.8%** | 615.4 / 245.7 / 23.8 / 3.4 | 补齐 10 列高度，主要保命消单/双行 |
+| *最终方法（不开前瞻，消融）* | *74,018.6* | *808.54* | *42.6%* | *279.7 / 114.8 / 64.1 / 26.8* | *长视野+经典奖励学会留槽，但易翻车* |
+| **最终方法（13 维 Double + $\gamma=0.99$ + 1 步前瞻）** | **161,083.7** | 1,147.94 | 93.0% | 208.7 / 118.3 / 116.5 / **88.3** | **经典得分达原 13 维的 2.67 倍** |
 
-![学习曲线](results/final/figures/learning_curves.png)
+**核心结论**：
+1. **状态表示决定生存上限**：3 维全局统计产生严重状态混叠（~12 行）；加入 10 列各自高度扩为 13 维后，平均消行直接升至 `1,191.69` 行（逼近 3000 块理论上限 1200 行）。
+2. **长视野经典奖励 + 1 步前瞻协同爆发**：长视野（$\gamma=0.99$）+ Double DQN + 经典连消权重让模型学会蓄力四连消，但缺少下一块信息容易翻车（存活 `42.6%`）；加入 **1 步前瞻** 后，存活率恢复到 **`93.0%`**，每局四连消从 `3.4` 次暴涨到 **`88.3` 次**，经典得分跃升至 **`161,083.7` 分**。
 
-补充图：
-- [各训练种子的测试成绩](results/final/figures/training_seed_scores.png)
-- [达到 3000 块上限的比例](results/final/figures/cap_hit_rates.png)
-- [相同方块序列下各方法的棋盘对比](results/final/figures/board_comparison.png)
-- [单局消行数分布](results/final/figures/episode_lines_distribution.png)
-- [存活曲线（含截断）](results/final/figures/survival_curves.png)
-- [训练耗时与成绩](results/final/figures/training_time_vs_score.png)
+---
 
-![13 维 DQN 演示](results/final/videos/features13_seed0.gif)
+## 效果图与动画演示
 
-## MDP 建模
+![各方法经典得分对比](results/v2/figures/classic_score_comparison.png)
 
-| 元素 | 定义 |
-|---|---|
-| 状态 S | 棋盘、当前方块及方块队列。网络输入为棋盘的压缩特征（3 维或 13 维） |
-| 动作 A | 当前方块的旋转（4 种）× 列位置（10 列），越界动作由 action mask 屏蔽 |
-| 奖励 R | 每次落子 +1，一次消除 k 行另加 10k²，游戏结束 −10。训练时奖励统一除以 10 |
-| 转移 P | 落子与消行由引擎确定性计算，下一方块按 7-bag 规则随机生成 |
-| 折扣 γ | 0.95 |
-| 终止 / 截断 | 方块无法生成为终止；达到放块上限为截断，截断时仍进行 bootstrap |
+**同局 500 块实况对比（左：13 维 DQN 基准 `10,360` 分 · 右：最终方法 `35,780` 分、打出 23 次四连消）**：
 
-## 价值函数
+![13 维 DQN vs 最终方法实局演示](results/v2/videos/comparison_13d_vs_final.gif)
 
-环境对 40 个候选动作分别模拟落子，得到即时奖励 r(s,a) 和落子后的棋盘（afterstate）。网络只学习 afterstate 的价值 V，动作价值由下式给出：
+- **全套新版图表与视频素材**：[results/v2/README.md](results/v2/README.md)（含前 5 组同屏动画、全 7 组棋盘对比、连消构成图、消融图）
+- **给队员的讲解与答辩笔记**：[report/final_summary.md](report/final_summary.md)
+- **中期实验原始存档（保留未改动）**：[results/final/README.md](results/final/README.md) · [report/results.md](report/results.md)
 
+---
+
+## 原理与决策流程
+
+```text
+当前方块 + 棋盘
+   │
+   ▼  ① 枚举 40 个候选落点（4 旋转 × 10 列，屏蔽越界动作）
+   │
+   ▼  ② 引擎并行模拟得到 afterstate（落子消行后的新棋盘）与即时奖励 r
+   │
+   ▼  ③ 价值网络 V(afterstate) 估计后续长期收益（MLP: 64-64-1，Huber loss）
+   │
+   ├── 无前瞻模式：选 r + γ·V(afterstate) 最大的落点
+   │
+   └── 1 步前瞻模式（--lookahead 1）：读取预告的下一块 queue[0]，枚举两步连招
+         选 r1 + γ · max[ r2 + γ·V(afterstate2) ] 最大的当前落点
 ```
-Q(s, a) = r(s, a) + γ · V(afterstate(s, a))      终止动作的 V 记为 0
-TD 目标 = r + γ · max_{a'} Q_target(s', a')
-```
 
-即时奖励由模拟器精确算出，网络只需拟合后续回报，因此学习难度更低。网络结构为 MLP（两个 64 单元隐藏层，ReLU），损失函数为 Huber loss，并使用经验回放、目标网络和 ε-greedy 探索。
+**配置文件说明**（`configs/` 下的单配置会自动合并 `configs/common.yaml`）：
 
-## 方法
+| 配置文件 | 算法 | 特征维度 | $\gamma$ | 说明 |
+|---|---|---:|---:|---|
+| `configs/dqn.yaml` | DQN | 3 维 | 0.95 | 基础 3 维对比基准 |
+| `configs/double_dqn.yaml` | Double DQN | 3 维 | 0.95 | 缓解 Q 值高估 |
+| `configs/dqn_shaped.yaml` | DQN + 奖励塑形 | 3 维 | 0.95 | 加入势函数差分奖励 |
+| `configs/dqn_features13.yaml` | DQN | 13 维 | 0.95 | 加入 10 列各自高度 |
+| `configs/final_classic_double.yaml` | Double DQN | 13 维 | 0.99 | 最终方法（经典连消奖励，测试配合 `--lookahead 1`） |
 
-**基线（无需训练）**
+---
 
-| 方法 | 策略 |
-|---|---|
-| 随机策略 | 在合法动作中均匀采样 |
-| 人工启发式 | 对每个 afterstate 打分：−0.5·最高高度 − 0.36·空洞数 − 0.18·凹凸度 + 消行数²，选取最高分动作；终止动作强制最低分 |
+## 快速上手：照着命令即可运行
 
-**DQN 配置**：四种配置共用网络结构、训练流程和超参数，仅以下三项不同。
-
-| 配置 | 配置文件 | 算法 | 状态特征 | 奖励塑形 | 实验目的 |
-|---|---|---|---|---|---|
-| DQN | `configs/dqn.yaml` | DQN | 3 维 | 否 | 基准配置 |
-| Double DQN | `configs/double_dqn.yaml` | Double DQN | 3 维 | 否 | 消融：缓解 Q 值高估 |
-| 奖励塑形 | `configs/dqn_shaped.yaml` | DQN | 3 维 | 是 | 消融：势函数奖励塑形 |
-| 13 维特征 | `configs/dqn_features13.yaml` | DQN | 13 维 | 否 | 消融：状态表示 |
-
-- **3 维特征**：最高高度、空洞数、凹凸度（相邻列高度差的绝对值之和），均除以 10。
-- **13 维特征**：在 3 维特征之外加入 10 列各自的高度。
-- **Double DQN**：由在线网络选择下一步动作，再由目标网络评估该动作，以降低 max 操作带来的高估偏差。
-- **奖励塑形**：基于势函数，附加奖励为 γΦ(s') − Φ(s)，其中 Φ = −(0.05·最高高度 + 0.5·空洞数)，终止状态 Φ = 0。权重见 `configs/common.yaml` 的 `shaping` 字段。
-
-## 安装（Windows，Python 3.13）
-
-在项目根目录打开 PowerShell，执行一次即可：
+### 第 0 步：环境安装与自检（Windows PowerShell，Python ≥ 3.10）
 
 ```powershell
+git clone https://github.com/Hefeng13/tetris-rl.git
+cd tetris-rl
+
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 .\.venv\Scripts\python.exe -m pip install -e . --no-deps
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-测试全部通过即表示安装完成。
-
-## 启动
-
-### 第 0 步：激活虚拟环境
-
-每次新开终端都要先执行这一步。执行后提示符前面会出现 `(.venv)`，之后的 `python` 就指向项目环境。
+看到 `32 passed`（无 GPU 时会有 `1 skipped`）即表示环境就绪。每次新开终端先激活环境：
 
 ```powershell
-cd 你的路径\tetris-rl
 .\.venv\Scripts\Activate.ps1
 ```
 
-- 如果提示"禁止运行脚本"，先执行 `Set-ExecutionPolicy -Scope Process Bypass`，再激活。
-- 如果用的是 cmd 而不是 PowerShell，激活命令改为 `.venv\Scripts\activate.bat`。
-- 不想激活也可以，把下文所有的 `python` 换成 `.\.venv\Scripts\python.exe` 即可。
+*(若提示“禁止运行脚本”，先执行 `Set-ExecutionPolicy -Scope Process Bypass`。)*
 
-### 第 1 步：冒烟测试（可选）
+---
 
-先用很少的步数跑一遍，确认训练、验证、测试整条流程都能走通：
+### 第 1 步：10 秒冒烟测试（确认整条链路能跑通）
 
 ```powershell
-python -m tetris_rl.train --steps 2000 --validation-episodes 3 `
-    --test-episodes 3 --evaluation-cap 200 --output runs/smoke_test
+python -m tetris_rl.train --config configs/final_classic_double.yaml `
+    --steps 2000 --validation-episodes 3 --test-episodes 3 --evaluation-cap 200 `
+    --output runs/smoke_test
 ```
 
-### 第 2 步：运行各方法
+---
 
-**基线**：不需要训练，直接评估，默认跑 100 个测试局。
+### 第 2 步：单独训练或直接评估已有模型
+
+**训练单个配置**（例如训练最终方法种子 0，默认 100,000 步，CPU 约 8 分钟）：
 
 ```powershell
-# 随机策略
-python -m tetris_rl.evaluate --policy random --output results/random_test
-
-# 人工启发式
-python -m tetris_rl.evaluate --policy heuristic --output results/heuristic_test
+python -m tetris_rl.train --config configs/final_classic_double.yaml --seed 0 --output runs/my_final_s0
 ```
 
-**DQN 系列**：用 `--config` 选配置文件，用 `--seed` 选训练种子。训练结束后程序会自动在测试集上评估 `best.pt`，结果写入 `--output` 目录下的 `summary.json`。
+**直接评估已训练好的模型（推荐使用仓库自带模型，开 1 步前瞻）**：
 
 ```powershell
-# DQN（3 维特征）
-python -m tetris_rl.train --config configs/dqn.yaml --seed 0 --output runs/dqn_s0
+# 用仓库自带的最终模型开启 1 步前瞻，先测试 5 局看看效果
+python -m tetris_rl.evaluate --policy dqn --lookahead 1 --episodes 5 `
+    --checkpoint runs/v2_final/final_classic_double_seed0_attempt1/best.pt `
+    --output results/my_final_check
 
-# Double DQN
-python -m tetris_rl.train --config configs/double_dqn.yaml --seed 0 --output runs/double_dqn_s0
-
-# DQN + 奖励塑形
-python -m tetris_rl.train --config configs/dqn_shaped.yaml --seed 0 --output runs/dqn_shaped_s0
-
-# DQN（13 维特征）
-python -m tetris_rl.train --config configs/dqn_features13.yaml --seed 0 --output runs/dqn_f13_s0
+# 对比基线（random | heuristic | potential）
+python -m tetris_rl.evaluate --policy heuristic --output results/my_heuristic
+python -m tetris_rl.evaluate --policy potential --output results/my_potential
 ```
 
-- 也可以用 `--experiment dqn` 代替 `--config configs/dqn.yaml`，其他配置同理。两者都不写时默认是 `dqn`。
-- 正式实验每个配置跑种子 0–4，各跑一次。
-- 每个配置跑 100,000 步，需要一段时间；训练过程会实时打印验证成绩。
+---
 
-**单独评估已训练好的模型**：
+### 第 3 步：一键复现全套图表与对比视频
+
+仓库已经保存了 `runs/formal_v1` 和 `runs/v2_final` 的全部训练模型，可以直接一键重跑评估、作图和视频生成（请输出到新目录，勿覆盖冻结目录）：
 
 ```powershell
-python -m tetris_rl.evaluate --policy dqn `
-    --checkpoint runs/formal_v1/dqn_features13_seed0_attempt1/best.pt --output results/f13_eval
+# 1. 多进程并行评估全部方法（输出汇总表 summary.csv 与逐局记录 episodes.csv）
+python scripts/evaluate_v2.py --batch runs/formal_v1 --include-potential `
+    --final-lookahead-dir runs/v2_final --output results/my_v2 --workers 8
+
+# 2. 生成核心对比图（经典得分对比、连消结构、种子稳定性）
+python scripts/plot_v2_results.py --results results/my_v2
+
+# 3. 生成棋盘对比图与最终方法消融图
+python scripts/plot_v2_boards_and_ablation.py `
+    --final-checkpoint runs/v2_final/final_classic_double_seed0_attempt1/best.pt `
+    --results results/my_v2
+
+# 4. 生成前 5 组同屏、13维 vs 最终方法同屏、7合1及单人带分 GIF/MP4
+python scripts/render_demo_v2.py `
+    --final-checkpoint runs/v2_final/final_classic_double_seed0_attempt1/best.pt `
+    --final-lookahead 1 --output results/my_v2/videos
 ```
 
-配置 ID 和特征维度会从模型文件中自动读取，不需要另外指定。
+---
 
-### 第 3 步：批量运行（可选）
-
-一条命令跑完全部实验（4 种配置 × 5 个种子 + 2 个基线），`--workers` 是并行进程数：
-
-```powershell
-python scripts/run_experiments.py --batch runs/my_batch --workers 4
-```
-
-只跑一种配置的 5 个种子和两个基线：
-
-```powershell
-python scripts/run_experiments.py --config configs/dqn_features13.yaml --batch runs/f13_batch --workers 4
-```
-
-批量运行支持断点续跑：中断后重新执行同一命令，已完成的任务会自动跳过。
-
-### 第 4 步：汇总结果与作图
-
-```powershell
-# 结果表与学习曲线
-python -m tetris_rl.plot --batch runs/my_batch --output results/my_batch
-
-# 补充图及对应数据
-python scripts/plot_additional_results.py --batch runs/my_batch --output results/my_batch
-
-# 演示 GIF / MP4
-python scripts/render_demo.py --batch runs/my_batch --output results/my_batch/videos
-```
-
-### 注意
-
-- `--output` 每次请指向新目录。
-- `runs/formal_v1` 和 `results/final` 是正式结果，报告中的数据均来自这两处，请勿修改。
-
-### 新增配置
-
-在 `configs/` 下新建 YAML 文件（加载时会自动合并同目录的 `common.yaml`），然后用 `--config` 指定：
-
-```yaml
-id: dqn_features13_double     # 配置 ID，需唯一
-algorithm: double_dqn         # dqn | double_dqn
-board_feature_dim: 13         # 3 | 13
-shaping_enabled: false        # true | false
-```
-
-共享超参数（学习率、训练步数、种子等）统一在 `configs/common.yaml` 中修改。
-
-## 代码结构
+## 目录结构
 
 | 路径 | 说明 |
 |---|---|
-| `src/tetris_rl/env.py` | 环境封装：批量模拟 40 个候选落子（afterstate、奖励、是否终止），再调用引擎执行真实转移 |
-| `src/tetris_rl/features.py` | 棋盘特征提取（3 维 / 13 维）与势函数 |
-| `src/tetris_rl/network.py` | 价值网络与 Q 值计算 |
-| `src/tetris_rl/agents/` | 随机策略、人工启发式、DQN / Double DQN 智能体 |
-| `src/tetris_rl/replay.py` | 经验回放缓冲区，保存下一状态的全部候选及其 action mask |
-| `src/tetris_rl/train.py` | 训练主循环：ε-greedy 采样、TD 更新、目标网络同步、验证与检查点选择 |
-| `src/tetris_rl/evaluate.py` | 在固定测试种子上评估策略 |
-| `src/tetris_rl/plot.py` | 结果汇总与绘图 |
-| `configs/` | 实验配置：`common.yaml` 为共享参数，其余 4 个文件各对应一种配置 |
-| `scripts/` | 批量运行、补充图、演示和报告生成 |
-| `tests/` | 回归测试：候选模拟与引擎一致性、TD 目标、模型保存与加载等 |
-
-建议阅读顺序：`env.py` → `network.py` → `agents/dqn_agent.py` → `train.py`。
-
-## 运行产物
-
-每次训练会在 `runs/` 下生成一个目录，命名格式为 `批次/配置_种子_尝试次数`，例如 `runs/formal_v1/dqn_features13_seed0_attempt1/`。
-
-| 文件 | 内容 |
-|---|---|
-| `config.yaml` | 本次运行的完整配置 |
-| `metadata.json` | 设备、依赖版本、随机种子 |
-| `train.csv` | 每个训练回合的消行数、回报、ε、TD loss |
-| `validation.csv` | 每 10,000 步的验证成绩 |
-| `best.pt` / `last.pt` | 验证成绩最优的检查点 / 训练结束时的检查点 |
-| `episodes.csv` / `summary.json` | 最终测试的逐局成绩 / 汇总统计 |
-
-`runs/formal_v1/source_snapshot` 保存了正式实验所用的源码版本。
-
-## 实验设置
-
-| 项目 | 设置 |
-|---|---|
-| 训练步数 | 每个种子 100,000 步（1 步 = 1 次落子），训练回合上限 500 块 |
-| 超参数 | Adam，学习率 1e-3，batch 64，回放容量 20,000，每 4 步更新一次，目标网络每 1,000 步同步 |
-| 探索 | ε 在前 60% 的训练步数内从 1.0 线性衰减到 0.05 |
-| 检查点选择 | 每 10,000 步在验证种子 10000–10019 上评估，保留平均消行数最高的检查点（包括第 0 步） |
-| 测试 | 测试种子 40000–40099，与验证集互不重叠；单局上限 3000 块，ε = 0 |
-| 统计方式 | 先计算每个模型 100 局的均值，再计算 5 个训练种子间的均值和标准差 |
-
-## GPU
-
-支持 `--device cuda | cpu | auto`。由于网络规模小、决策逐步进行，实测 CPU 比 GPU 更快（同一评估任务 CPU 2.2 s，CUDA 3.5 s），因此正式实验均在 CPU 上完成。GPU 依赖见 `requirements-gpu.txt`。
+| `src/tetris_rl/env.py` | `PlacementEnv`：批量模拟 40 个候选落点，支持 `next_piece_candidates` 一步前瞻模拟与自定义奖励 |
+| `src/tetris_rl/features.py` | 棋盘统计（各列高度、最高高度、空洞数、凹凸度）与 3/13 维特征提取 |
+| `src/tetris_rl/network.py` | `QNetwork`：基于 `Q = r + γ·V(afterstate)` 分解的 MLP 估值网络 |
+| `src/tetris_rl/agents/` | 智能体实现：`random_agent`、`heuristic_agent`、`potential_agent`、`dqn_agent`、`lookahead` |
+| `src/tetris_rl/train.py` | 训练主循环：经验回放、目标网络同步、ε-greedy 探索与按验证集选检查点 |
+| `src/tetris_rl/evaluate.py` | 统一评估入口：支持 `--lookahead 1`、经典得分与 `1/2/3/4` 连消统计 |
+| `configs/` | `common.yaml` 共享参数 + 5 个实验配置 |
+| `scripts/` | 批量训练、并行评估（`evaluate_v2.py`）、绘图与视频生成脚本 |
+| `runs/formal_v1/` & `runs/v2_final/` | 冻结的中期 22 组产物与最终方法 5 种子模型（含 `best.pt`） |
+| `results/final/` & `results/v2/` | 中期与终版完整实验数据表、图表和演示视频 |
+| `report/` | 实验记录 [results.md](report/results.md) 与队员理解手册 [final_summary.md](report/final_summary.md) |
+| `tests/` | 回归测试（环境与引擎一致性、TD 目标、前瞻二步等价性、经典得分核算等） |

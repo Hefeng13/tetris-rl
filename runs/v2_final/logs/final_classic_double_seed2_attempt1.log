@@ -1,0 +1,12 @@
+final_classic_double seed=2 step=0/100000 validation_lines=4.70 classic_score=194.0
+final_classic_double seed=2 step=10000/100000 validation_lines=5.95 classic_score=261.0
+final_classic_double seed=2 step=20000/100000 validation_lines=19.15 classic_score=820.0
+final_classic_double seed=2 step=30000/100000 validation_lines=18.65 classic_score=757.0
+final_classic_double seed=2 step=40000/100000 validation_lines=40.70 classic_score=1738.0
+final_classic_double seed=2 step=50000/100000 validation_lines=201.75 classic_score=8580.0
+final_classic_double seed=2 step=60000/100000 validation_lines=506.30 classic_score=22322.0
+final_classic_double seed=2 step=70000/100000 validation_lines=982.45 classic_score=59053.0
+final_classic_double seed=2 step=80000/100000 validation_lines=790.65 classic_score=69915.0
+final_classic_double seed=2 step=90000/100000 validation_lines=85.50 classic_score=12263.0
+final_classic_double seed=2 step=100000/100000 validation_lines=80.85 classic_score=11429.0
+COMPLETE final_classic_double_seed2_attempt1 test_lines=816.49

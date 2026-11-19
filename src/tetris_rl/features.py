@@ -8,7 +8,7 @@ def board_statistics(boards):
     occupied = np.asarray(boards) != 0
     height = occupied.shape[-2]
     heights = np.where(occupied.any(axis=-2), height - occupied.argmax(axis=-2), 0)
-    holes = ((np.cumsum(occupied, axis=-2) > 0) & ~occupied).sum(axis=(-2, -1))
+    holes = heights.sum(axis=-1) - occupied.sum(axis=(-2, -1))
     bumpiness = np.abs(np.diff(heights, axis=-1)).sum(axis=-1)
     return heights, heights.max(axis=-1), holes, bumpiness
 

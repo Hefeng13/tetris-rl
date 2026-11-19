@@ -30,16 +30,18 @@ def run_training(config, experiment_name, seed, output, steps=None,
     validation_episodes = validation_episodes or evaluation["validation_episodes"]
     test_episodes = test_episodes or evaluation["test_episodes"]
     board_dim = experiment["board_feature_dim"]
-    env = make_env(config, board_dim, shaping_enabled=experiment["shaping_enabled"])
+    gamma = experiment.get("gamma", settings["gamma"])
+    env = make_env(config, board_dim, shaping_enabled=experiment["shaping_enabled"], experiment=experiment)
     candidates = env.reset(1_000_000 + seed * 1_000_000)
-    agent = DQNAgent(board_dim + 2, seed, settings["learning_rate"], settings["gamma"],
+    agent = DQNAgent(board_dim + 2, seed, settings["learning_rate"], gamma,
                      double=experiment["algorithm"] == "double_dqn", device=device)
     replay = ReplayBuffer(settings["replay_capacity"], board_dim + 2, seed=seed)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     (output / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
     metadata = {**provenance(device), "experiment": experiment_name, "seed": seed,
-                "board_feature_dim": board_dim, "steps": steps,
+                "board_feature_dim": board_dim, "steps": steps, "gamma": gamma,
+                "experiment_config": experiment,
                 "value_definition": "Q=known_scaled_reward+gamma*V_afterstate;terminal_V=0",
                 "created_at": datetime.now().isoformat(),
                 "test_episodes": test_episodes, "validation_episodes": validation_episodes,
@@ -48,14 +50,16 @@ def run_training(config, experiment_name, seed, output, steps=None,
     validation_cap = evaluation_cap or config["environment"]["validation_piece_cap"]
     test_cap = evaluation_cap or config["environment"]["test_piece_cap"]
     started = time.perf_counter()
-    best_lines = -1.0
+    best_score = -1.0
     episode = 0
     last_loss = 0.0
     episode_lines, episode_return = 0, 0.0
     validations = []
+    selection_mode = experiment.get("checkpoint_selection", evaluation.get("checkpoint_selection", "best_validation_mean_lines"))
+    selection_key = "mean_classic_score" if selection_mode == "best_validation_classic_score" else "mean_lines"
     train_fields = ["env_steps", "episode", "episode_lines", "episode_pieces", "return",
                     "epsilon", "td_loss", "elapsed_seconds"]
-    validation_fields = ["env_steps", "mean_lines", "mean_pieces", "cap_hit_rate"]
+    validation_fields = ["env_steps", "mean_lines", "mean_classic_score", "mean_pieces", "cap_hit_rate"]
     with (output / "train.csv").open("w", newline="", encoding="utf-8") as train_handle, \
             (output / "validation.csv").open("w", newline="", encoding="utf-8") as val_handle:
         train_writer = csv.DictWriter(train_handle, fieldnames=train_fields)
@@ -64,7 +68,7 @@ def run_training(config, experiment_name, seed, output, steps=None,
         val_writer.writeheader()
 
         def validate(step):
-            nonlocal best_lines
+            nonlocal best_score
             _, summary = evaluate_policy(agent, config, board_dim,
                 range(evaluation["validation_seed_start"],
                       evaluation["validation_seed_start"] + validation_episodes), validation_cap,
@@ -75,14 +79,15 @@ def run_training(config, experiment_name, seed, output, steps=None,
             validations.append(row)
             checkpoint_metadata = {**metadata, "checkpoint_step": step}
             # Equal primary performance favors the later checkpoint.
-            if summary["mean_lines"] >= best_lines:
-                best_lines = summary["mean_lines"]
+            if summary[selection_key] >= best_score:
+                best_score = summary[selection_key]
                 agent.save(output / "best.pt", checkpoint_metadata)
             write_json(output / "progress.json", {"status": "training", "step": step,
-                "total_steps": steps, "best_validation_lines": best_lines,
+                "total_steps": steps, "best_validation_lines": best_score,
                 "last_validation": row, "elapsed_seconds": time.perf_counter() - started})
             print(f"{experiment_name} seed={seed} step={step}/{steps} "
-                  f"validation_lines={summary['mean_lines']:.2f}", flush=True)
+                  f"validation_lines={summary['mean_lines']:.2f} "
+                  f"classic_score={summary['mean_classic_score']:.1f}", flush=True)
 
         validate(0)
         for step in range(1, steps + 1):
@@ -124,7 +129,8 @@ def run_training(config, experiment_name, seed, output, steps=None,
                     "training_seconds": training_seconds, "steps": steps,
                     "best_checkpoint_step": best_metadata["checkpoint_step"],
                     "initial_validation_lines": validations[0]["mean_lines"],
-                    "best_validation_lines": best_lines})
+                    "best_validation_lines": max(row["mean_lines"] for row in validations),
+                    "best_validation_score": best_score})
     write_json(output / "summary.json", summary)
     write_json(output / "progress.json", {"status": "complete", **summary})
     print(f"COMPLETE {output.name} test_lines={summary['mean_lines']:.2f}", flush=True)
